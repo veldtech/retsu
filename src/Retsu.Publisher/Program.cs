@@ -58,7 +58,7 @@ namespace Sharder.App
             }, allShardIds);
 
             ConnectionFactory conn = new ConnectionFactory();
-            conn.HostName = "localhost";
+            conn.HostName = _config.MessageQueue.HostName;
             conn.DispatchConsumersAsync = true;
 
             using (var connection = conn.CreateConnection())
@@ -94,7 +94,7 @@ namespace Sharder.App
         {
             var json = Encoding.UTF8.GetString(e.Body);
             CommandMessage msg = JsonConvert.DeserializeObject<CommandMessage>(json);
-            if (msg.Opcode == null)
+            if (msg.Type == null)
             {
                 await _cluster.SendAsync(msg.ShardId, msg.Opcode, msg.Data);
             }
