@@ -58,7 +58,7 @@ namespace Sharder.App
             }, allShardIds);
 
             ConnectionFactory conn = new ConnectionFactory();
-            conn.Uri = _config.MessageQueue.Url;
+            conn.Uri = new Uri(_config.MessageQueue.Url);
             conn.DispatchConsumersAsync = true;
 
             using (var connection = conn.CreateConnection())
