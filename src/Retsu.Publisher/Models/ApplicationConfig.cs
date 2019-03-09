@@ -21,8 +21,8 @@ namespace Sharder.App
 
         public class MQConfig
         {
-            [JsonProperty("hostname")]
-            public string HostName { get; set; } = "localhost";
+            [JsonProperty("url")]
+            public string Url { get; set; } = "amqp://localhost";
         }
 
         [JsonProperty("discord")]
