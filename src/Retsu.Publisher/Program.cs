@@ -122,15 +122,15 @@ namespace Sharder.App
             {
                 using (var x = File.CreateText(filePath))
                 {
-                    await x.WriteAsync(JsonConvert.SerializeObject(new Config()));
+                    await x.WriteAsync(JsonConvert.SerializeObject(new ApplicationConfig()));
                     await x.FlushAsync();
-                    _config = new Config();
+                    _config = new ApplicationConfig();
                 }
             }
             else
             {
                 string json = await File.ReadAllTextAsync(filePath);
-                _config = JsonConvert.DeserializeObject<Config>(json);
+                _config = JsonConvert.DeserializeObject<ApplicationConfig>(json);
             }
         }   
     }
