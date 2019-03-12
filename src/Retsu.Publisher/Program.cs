@@ -28,7 +28,7 @@ namespace Sharder.App
         static async Task MainAsync(string[] args)
         {
             new LogBuilder()
-                .AddLogEvent((msg, lvl) => { if (lvl >= LogLevel.Debug) Console.WriteLine(msg); })
+                .AddLogEvent((msg, lvl) => { if (lvl >= _config.LogLevel) Console.WriteLine(msg); })
                 .Apply();
 
             await LoadConfigAsync();

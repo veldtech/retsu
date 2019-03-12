@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Miki.Logging;
+using Newtonsoft.Json;
 
 namespace Sharder.App
 {
@@ -27,6 +28,9 @@ namespace Sharder.App
 
         [JsonProperty("discord")]
         public DiscordConfig Discord { get; set; } = new DiscordConfig();
+
+        [JsonProperty("loglevel")]
+        public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
         [JsonProperty("msg_queue")]
         public MQConfig MessageQueue { get; set; } = new MQConfig();
