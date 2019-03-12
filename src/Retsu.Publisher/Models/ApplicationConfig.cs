@@ -1,5 +1,6 @@
 ﻿using Miki.Logging;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Sharder.App
 {
@@ -28,6 +29,9 @@ namespace Sharder.App
 
         [JsonProperty("discord")]
         public DiscordConfig Discord { get; set; } = new DiscordConfig();
+
+        [JsonProperty("ignore_packets")]
+        public IEnumerable<string> IgnorePackets { get; set; } = new List<string>();
 
         [JsonProperty("loglevel")]
         public LogLevel LogLevel { get; set; } = LogLevel.Information;

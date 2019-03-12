@@ -1,5 +1,6 @@
 ﻿using Miki.Cache.StackExchange;
 using Miki.Discord.Common;
+using Miki.Discord.Common.Gateway.Packets;
 using Miki.Discord.Gateway;
 using Miki.Discord.Gateway.Connection;
 using Miki.Discord.Gateway.Ratelimiting;
@@ -12,6 +13,7 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -68,7 +70,7 @@ namespace Sharder.App
                 _pusherModel.ExchangeDeclare("gateway", "direct", true);
                 _pusherModel.QueueDeclare("gateway", true, false, false);
                 _pusherModel.QueueBind("gateway", "gateway", "");
-                _cluster.OnRawPacketReceived += OnPacketReceivedAsync;
+                _cluster.OnPacketReceived += OnPacketReceivedAsync;
 
                 commandModel.ExchangeDeclare("gateway-command", "fanout", true);
 
@@ -84,9 +86,16 @@ namespace Sharder.App
             }
         }
 
-        private static Task OnPacketReceivedAsync(ArraySegment<byte> arg)
+        private static Task OnPacketReceivedAsync(GatewayMessage arg, ArraySegment<byte> packet)
         {
-            _pusherModel.BasicPublish("gateway", "", mandatory: true, body: arg.ToArray());
+            if(_config.IgnorePackets.Contains(arg.EventName))
+            {
+                return Task.CompletedTask;
+            }
+
+            Log.Message(arg.EventName);
+
+            _pusherModel.BasicPublish("gateway", "", mandatory: true, body: packet.ToArray());
             return Task.CompletedTask;
         }
 
