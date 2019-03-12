@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Miki.Cache.StackExchange.Redis" Version="2.2.1" />
-    <PackageReference Include="Miki.Discord.Gateway" Version="0.1.0" />
+    <PackageReference Include="Miki.Discord.Gateway" Version="0.1.1" />
     <PackageReference Include="Miki.Serialization.Protobuf" Version="1.0.4" />
     <PackageReference Include="RabbitMQ.Client" Version="5.1.0" />
   </ItemGroup>
