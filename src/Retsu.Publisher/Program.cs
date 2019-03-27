@@ -33,14 +33,13 @@ namespace Sharder.App
         {
             new LogBuilder()
                 .AddLogEvent((msg, lvl) => { if (lvl >= _config.LogLevel) Console.WriteLine(msg); })
+                //.AddExceptionEvent((ex, lvl) => SentrySdk.CaptureException(ex))
                 .Apply();
 
             await LoadConfigAsync();
 
             using (SentrySdk.Init(_config.SentryUrl))
             {
-
-
                 var redis = await StackExchange.Redis.ConnectionMultiplexer.ConnectAsync(_config.RedisUrl);
                 var cache = new StackExchangeCacheClient(
                     new ProtobufSerializer(),
