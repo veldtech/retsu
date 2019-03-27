@@ -10,6 +10,8 @@ using Miki.Serialization.Protobuf;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using Retsu.Publisher;
+using Sentry;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,7 +23,7 @@ namespace Sharder.App
 {
     class Program
     {
-        static GatewayCluster _cluster;
+        static GatewayConnectionCluster _cluster;
         static ApplicationConfig _config;
         static IModel _pusherModel;
 
@@ -35,66 +37,69 @@ namespace Sharder.App
 
             await LoadConfigAsync();
 
-            var cache = new StackExchangeCacheClient(
-                new ProtobufSerializer(), 
-                await StackExchange.Redis.ConnectionMultiplexer.ConnectAsync(_config.RedisUrl));
-
-            IApiClient api = new DiscordApiClient(_config.Discord.Token, cache);
-
-            List<int> allShardIds = new List<int>();
-            for (int i = _config.Discord.ShardIndex; i < _config.Discord.ShardIndex + _config.Discord.ShardCount; i++)
+            using (SentrySdk.Init(_config.SentryUrl))
             {
-                allShardIds.Add(i);
-            }
 
-            _cluster = new GatewayCluster(new GatewayProperties
-            {
-                Compressed = true,
-                Encoding = GatewayEncoding.Json,
-                Ratelimiter = new CacheBasedRatelimiter(cache),
-                ShardCount = _config.Discord.ShardCount,
-                ShardId = 0,
-                Token = _config.Discord.Token,
-                Version = GatewayConstants.DefaultVersion,
-                AllowNonDispatchEvents = false
-            }, allShardIds);
 
-            ConnectionFactory conn = new ConnectionFactory();
-            conn.Uri = new Uri(_config.MessageQueue.Url);
-            conn.DispatchConsumersAsync = true;
+                var redis = await StackExchange.Redis.ConnectionMultiplexer.ConnectAsync(_config.RedisUrl);
+                var cache = new StackExchangeCacheClient(
+                    new ProtobufSerializer(),
+                    redis);
 
-            using (var connection = conn.CreateConnection())
-            using (_pusherModel = connection.CreateModel())
-            using (var commandModel = connection.CreateModel())
-            {
-                _pusherModel.ExchangeDeclare("gateway", "direct", true);
-                _pusherModel.QueueDeclare("gateway", true, false, false);
-                _pusherModel.QueueBind("gateway", "gateway", "");
-                _cluster.OnPacketReceived += OnPacketReceivedAsync;
+                IApiClient api = new DiscordApiClient(_config.Discord.Token, cache);
 
-                commandModel.ExchangeDeclare("gateway-command", "fanout", true);
+                List<int> allShardIds = new List<int>();
+                for (int i = _config.Discord.ShardIndex; i < _config.Discord.ShardIndex + _config.Discord.ShardAmount; i++)
+                {
+                    allShardIds.Add(i);
+                }
 
-                var queue = commandModel.QueueDeclare();
-                commandModel.QueueBind(queue.QueueName, "gateway-command", "");
+                _cluster = new GatewayConnectionCluster(new GatewayProperties
+                {
+                    Compressed = true,
+                    Encoding = GatewayEncoding.Json,
+                    Ratelimiter = new BetterRatelimiter(redis),
+                    ShardCount = _config.Discord.ShardCount,
+                    ShardId = 0,
+                    Token = _config.Discord.Token,
+                    Version = GatewayConstants.DefaultVersion,
+                    AllowNonDispatchEvents = false
+                }, allShardIds);
 
-                var consumer = new AsyncEventingBasicConsumer(commandModel);
-                consumer.Received += OnCommandReceivedAsync;
-                commandModel.BasicConsume(queue.QueueName, false, consumer);
+                ConnectionFactory conn = new ConnectionFactory();
+                conn.Uri = new Uri(_config.MessageQueue.Url);
+                conn.DispatchConsumersAsync = true;
 
-                await _cluster.StartAsync();
-                await Task.Delay(-1);
+                using (var connection = conn.CreateConnection())
+                using (_pusherModel = connection.CreateModel())
+                using (var commandModel = connection.CreateModel())
+                {
+                    _pusherModel.ExchangeDeclare("gateway", "direct", true);
+                    _pusherModel.QueueDeclare("gateway", true, false, false);
+                    _pusherModel.QueueBind("gateway", "gateway", "");
+                    _cluster.OnPacketReceived += OnPacketReceivedAsync;
+
+                    commandModel.ExchangeDeclare("gateway-command", "fanout", true);
+
+                    var queue = commandModel.QueueDeclare();
+                    commandModel.QueueBind(queue.QueueName, "gateway-command", "");
+
+                    var consumer = new AsyncEventingBasicConsumer(commandModel);
+                    consumer.Received += OnCommandReceivedAsync;
+                    commandModel.BasicConsume(queue.QueueName, false, consumer);
+
+                    await _cluster.StartAsync();
+                    await Task.Delay(-1);
+                }
             }
         }
 
-        private static Task OnPacketReceivedAsync(GatewayMessage arg, ArraySegment<byte> packet)
+        private static Task OnPacketReceivedAsync(GatewayMessage arg, Memory<byte> packet)
         {
             if(_config.IgnorePackets.Contains(arg.EventName))
             {
                 return Task.CompletedTask;
             }
-
-            Log.Message(arg.EventName);
-
             _pusherModel.BasicPublish("gateway", "", mandatory: true, body: packet.ToArray());
             return Task.CompletedTask;
         }
@@ -113,10 +118,7 @@ namespace Sharder.App
                 {
                     case "reconnect":
                     {
-                        if (_cluster.Shards.TryGetValue(msg.ShardId, out var shard))
-                        {
-                            await shard.RestartAsync();
-                        }
+                        await _cluster.RestartAsync(msg.ShardId);
                     }
                     break;
                 }

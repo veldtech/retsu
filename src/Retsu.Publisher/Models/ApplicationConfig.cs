@@ -41,5 +41,8 @@ namespace Sharder.App
 
         [JsonProperty("redis_url")]
         public string RedisUrl { get; set; } = "";
+
+        [JsonProperty("sentry_url")]
+        public string SentryUrl { get; set; }
     }
 }

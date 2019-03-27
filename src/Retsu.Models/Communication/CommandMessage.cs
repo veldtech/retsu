@@ -36,9 +36,14 @@ namespace Miki.Discord.Common
 		public static CommandMessage FromGatewayMessage<T>(int shardId, GatewayMessage message)
 			where T : class
 		{
+            if(message.OpCode == null)
+            {
+                return null;
+            }
+
 			CommandMessage msg = new CommandMessage();
 			msg.ShardId = shardId;
-			msg.Opcode = message.OpCode;
+			msg.Opcode = message.OpCode.Value;
 			msg.Data = message.Data as T;
 			return msg;
 		}
