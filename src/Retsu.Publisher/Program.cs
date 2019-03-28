@@ -33,7 +33,7 @@ namespace Sharder.App
         {
             new LogBuilder()
                 .AddLogEvent((msg, lvl) => { if (lvl >= _config.LogLevel) Console.WriteLine(msg); })
-                //.AddExceptionEvent((ex, lvl) => SentrySdk.CaptureException(ex))
+                .AddExceptionEvent((ex, lvl) => SentrySdk.CaptureException(ex))
                 .Apply();
 
             await LoadConfigAsync();
