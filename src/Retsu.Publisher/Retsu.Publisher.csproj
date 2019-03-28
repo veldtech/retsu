@@ -8,7 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Miki.Cache.StackExchange.Redis" Version="2.2.1" />
     <PackageReference Include="Miki.Discord.Gateway" Version="0.1.7" />
-    <PackageReference Include="Miki.Logging" Version="1.4.0" />
+    <PackageReference Include="Miki.Logging" Version="1.4.1" />
     <PackageReference Include="Miki.Serialization.Protobuf" Version="1.0.4" />
     <PackageReference Include="RabbitMQ.Client" Version="5.1.0" />
     <PackageReference Include="Sentry" Version="1.1.2" />
