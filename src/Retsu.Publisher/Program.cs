@@ -45,10 +45,11 @@ namespace Sharder.App
                     new ProtobufSerializer(),
                     redis);
 
-                IApiClient api = new DiscordApiClient(_config.Discord.Token, cache);
+                IApiClient api = new DiscordApiClient(
+                    _config.Discord.Token, cache);
 
                 List<int> allShardIds = new List<int>();
-                for (int i = _config.Discord.ShardIndex; i < _config.Discord.ShardIndex + _config.Discord.ShardAmount; i++)
+                for (var i = _config.Discord.ShardIndex; i < _config.Discord.ShardIndex + _config.Discord.ShardAmount; i++)
                 {
                     allShardIds.Add(i);
                 }
@@ -93,13 +94,15 @@ namespace Sharder.App
             }
         }
 
-        private static Task OnPacketReceivedAsync(GatewayMessage arg, Memory<byte> packet)
+        private static Task OnPacketReceivedAsync(GatewayMessage arg)
         {
             if(_config.IgnorePackets.Contains(arg.EventName))
             {
                 return Task.CompletedTask;
             }
-            _pusherModel.BasicPublish("gateway", "", mandatory: true, body: packet.ToArray());
+            _pusherModel.BasicPublish("gateway", "", 
+                mandatory: true, body: 
+                Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(arg)));
             return Task.CompletedTask;
         }
 

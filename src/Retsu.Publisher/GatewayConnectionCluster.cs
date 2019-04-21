@@ -19,7 +19,7 @@ namespace Retsu.Publisher
         private List<GatewayConnection> _connections = new List<GatewayConnection>();
         private GatewayProperties _properties;
 
-        public event Func<GatewayMessage, Memory<byte>, Task> OnPacketReceived;
+        public event Func<GatewayMessage, Task> OnPacketReceived;
 
         public GatewayConnectionCluster(GatewayProperties properties, IEnumerable<int> allShardIds)
         {

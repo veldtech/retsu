@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <PackageReference Include="Miki.Cache.StackExchange.Redis" Version="2.2.1" />
-    <PackageReference Include="Miki.Discord.Gateway" Version="0.1.9" />
     <PackageReference Include="Miki.Logging" Version="1.4.2" />
     <PackageReference Include="Miki.Serialization.Protobuf" Version="1.0.4" />
     <PackageReference Include="RabbitMQ.Client" Version="5.1.0" />
@@ -14,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Miki.Discord\Miki.Discord.Gateway\Miki.Discord.Gateway.csproj" />
     <ProjectReference Include="..\Retsu.Models\Retsu.Models.csproj" />
   </ItemGroup>
 </Project>
