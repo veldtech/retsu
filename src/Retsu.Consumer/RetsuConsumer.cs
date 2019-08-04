@@ -10,7 +10,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Retsu.Consumer;
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -43,8 +42,8 @@ namespace Retsu.Consumer
 		public Func<GatewayReadyPacket, Task> OnReady { get; set; }
 		public Func<TypingStartEventArgs, Task> OnTypingStart { get; set; }
 		public Func<DiscordPresencePacket, Task> OnUserUpdate { get; set; }
-        public event Func<GatewayMessage, Task> OnPacketSent;
-        public event Func<GatewayMessage, Task> OnPacketReceived;
+		public event Func<GatewayMessage, Task> OnPacketSent;
+		public event Func<GatewayMessage, Task> OnPacketReceived;
 
 		private IConnection _connection;
 
@@ -92,11 +91,11 @@ namespace Retsu.Consumer
 			_commandChannel.QueueBind(config.QueueName + "-command", config.QueueName + "-command", config.ExchangeRoutingKey, null);
 		}
 
-        public async Task RestartAsync()
-        {
-            await StopAsync();
-            await StartAsync();
-        }
+		public async Task RestartAsync()
+		{
+			await StopAsync();
+			await StartAsync();
+		}
 
 		public Task StartAsync()
 		{
@@ -118,338 +117,338 @@ namespace Retsu.Consumer
 		{
 			var payload = Encoding.UTF8.GetString(ea.Body);
 			var sw = Stopwatch.StartNew();
-            var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
-            if(body.OpCode != GatewayOpcode.Dispatch)
-            {
-                _channel.BasicAck(ea.DeliveryTag, false);
-                Log.Trace("packet from gateway with op '" + body.OpCode + "' received");
-                return;
-            }
+			var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
+			if(body.OpCode != GatewayOpcode.Dispatch)
+			{
+				_channel.BasicAck(ea.DeliveryTag, false);
+				Log.Trace("packet from gateway with op '" + body.OpCode + "' received");
+				return;
+			}
 
-            try
+			try
 			{
 				Log.Trace("packet with the op-code '" + body.EventName + "' received.");
-                switch (Enum.Parse(typeof(GatewayEventType), body.EventName.Replace("_", ""), true))
-                {
-                    case GatewayEventType.MessageCreate:
-                    {
-                        if (OnMessageCreate != null)
-                        {
-                            await OnMessageCreate(
-                                (body.Data as JToken).ToObject<DiscordMessagePacket>()
-                            );
-                        }
-                    }
-                    break;
+				switch(Enum.Parse(typeof(GatewayEventType), body.EventName.Replace("_", ""), true))
+				{
+					case GatewayEventType.MessageCreate:
+					{
+						if(OnMessageCreate != null)
+						{
+							await OnMessageCreate(
+								(body.Data as JToken).ToObject<DiscordMessagePacket>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildCreate:
-                    {
-                        if (OnGuildCreate != null)
-                        {
-                            var guild = (body.Data as JToken).ToObject<DiscordGuildPacket>();
+					case GatewayEventType.GuildCreate:
+					{
+						if(OnGuildCreate != null)
+						{
+							var guild = (body.Data as JToken).ToObject<DiscordGuildPacket>();
 
-                            await OnGuildCreate(
-                                guild
-                            );
-                        }
-                    }
-                    break;
+							await OnGuildCreate(
+								guild
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.ChannelCreate:
-                    {
-                        if (OnGuildCreate != null)
-                        {
-                            var channel = (body.Data as JToken).ToObject<DiscordChannelPacket>();
+					case GatewayEventType.ChannelCreate:
+					{
+						if(OnGuildCreate != null)
+						{
+							var channel = (body.Data as JToken).ToObject<DiscordChannelPacket>();
 
-                            await OnChannelCreate(
-                                channel
-                            );
-                        }
-                    }
-                    break;
+							await OnChannelCreate(
+								channel
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildMemberRemove:
-                    {
-                        if (OnGuildMemberRemove != null)
-                        {
-                            var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
+					case GatewayEventType.GuildMemberRemove:
+					{
+						if(OnGuildMemberRemove != null)
+						{
+							var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
 
-                            await OnGuildMemberRemove(
-                                packet.guildId,
-                                packet.user
-                            );
-                        }
-                    }
-                    break;
+							await OnGuildMemberRemove(
+								packet.guildId,
+								packet.user
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildMemberAdd:
-                    {
-                        DiscordGuildMemberPacket guildMember = (body.Data as JToken).ToObject<DiscordGuildMemberPacket>();
+					case GatewayEventType.GuildMemberAdd:
+					{
+						DiscordGuildMemberPacket guildMember = (body.Data as JToken).ToObject<DiscordGuildMemberPacket>();
 
-                        if (OnGuildMemberAdd != null)
-                        {
-                            await OnGuildMemberAdd(guildMember);
-                        }
-                    }
-                    break;
+						if(OnGuildMemberAdd != null)
+						{
+							await OnGuildMemberAdd(guildMember);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildMemberUpdate:
-                    {
-                        GuildMemberUpdateEventArgs guildMember = (body.Data as JToken).ToObject<GuildMemberUpdateEventArgs>();
+					case GatewayEventType.GuildMemberUpdate:
+					{
+						GuildMemberUpdateEventArgs guildMember = (body.Data as JToken).ToObject<GuildMemberUpdateEventArgs>();
 
-                        if (OnGuildMemberUpdate != null)
-                        {
-                            await OnGuildMemberUpdate(
-                                guildMember
-                            );
-                        }
-                    }
-                    break;
+						if(OnGuildMemberUpdate != null)
+						{
+							await OnGuildMemberUpdate(
+								guildMember
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildRoleCreate:
-                    {
-                        RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
+					case GatewayEventType.GuildRoleCreate:
+					{
+						RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
 
-                        if (OnGuildRoleCreate != null)
-                        {
-                            await OnGuildRoleCreate(
-                                role.GuildId,
-                                role.Role
-                            );
-                        }
-                    }
-                    break;
+						if(OnGuildRoleCreate != null)
+						{
+							await OnGuildRoleCreate(
+								role.GuildId,
+								role.Role
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildRoleDelete:
-                    {
-                        if (OnGuildRoleDelete != null)
-                        {
-                            RoleDeleteEventArgs role = (body.Data as JToken).ToObject<RoleDeleteEventArgs>();
+					case GatewayEventType.GuildRoleDelete:
+					{
+						if(OnGuildRoleDelete != null)
+						{
+							RoleDeleteEventArgs role = (body.Data as JToken).ToObject<RoleDeleteEventArgs>();
 
-                            await OnGuildRoleDelete(
-                                role.GuildId,
-                                role.RoleId
-                            );
-                        }
-                    }
-                    break;
+							await OnGuildRoleDelete(
+								role.GuildId,
+								role.RoleId
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildRoleUpdate:
-                    {
-                        RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
+					case GatewayEventType.GuildRoleUpdate:
+					{
+						RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
 
-                        if (OnGuildRoleUpdate != null)
-                        {
-                            await OnGuildRoleUpdate(
-                                role.GuildId,
-                                role.Role
-                            );
-                        }
-                    }
-                    break;
+						if(OnGuildRoleUpdate != null)
+						{
+							await OnGuildRoleUpdate(
+								role.GuildId,
+								role.Role
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.ChannelDelete:
-                    {
-                        if (OnChannelDelete != null)
-                        {
-                            await OnChannelDelete(
-                                (body.Data as JToken).ToObject<DiscordChannelPacket>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.ChannelDelete:
+					{
+						if(OnChannelDelete != null)
+						{
+							await OnChannelDelete(
+								(body.Data as JToken).ToObject<DiscordChannelPacket>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.ChannelUpdate:
-                    {
-                        if (OnChannelUpdate != null)
-                        {
-                            await OnChannelUpdate(
-                                (body.Data as JToken).ToObject<DiscordChannelPacket>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.ChannelUpdate:
+					{
+						if(OnChannelUpdate != null)
+						{
+							await OnChannelUpdate(
+								(body.Data as JToken).ToObject<DiscordChannelPacket>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildBanAdd:
-                    {
-                        if (OnGuildBanAdd != null)
-                        {
-                            var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
+					case GatewayEventType.GuildBanAdd:
+					{
+						if(OnGuildBanAdd != null)
+						{
+							var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
 
-                            await OnGuildBanAdd(
-                                packet.guildId,
-                                packet.user
-                            );
-                        }
-                    }
-                    break;
+							await OnGuildBanAdd(
+								packet.guildId,
+								packet.user
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildBanRemove:
-                    {
-                        if (OnGuildBanRemove != null)
-                        {
-                            var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
+					case GatewayEventType.GuildBanRemove:
+					{
+						if(OnGuildBanRemove != null)
+						{
+							var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
 
-                            await OnGuildBanRemove(
-                                packet.guildId,
-                                packet.user
-                            );
-                        }
-                    }
-                    break;
+							await OnGuildBanRemove(
+								packet.guildId,
+								packet.user
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildDelete:
-                    {
-                        if (OnGuildDelete != null)
-                        {
-                            var packet = (body.Data as JToken).ToObject<DiscordGuildUnavailablePacket>();
+					case GatewayEventType.GuildDelete:
+					{
+						if(OnGuildDelete != null)
+						{
+							var packet = (body.Data as JToken).ToObject<DiscordGuildUnavailablePacket>();
 
-                            await OnGuildDelete(
-                                packet
-                            );
-                        }
-                    }
-                    break;
+							await OnGuildDelete(
+								packet
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildEmojisUpdate:
-                    {
-                        if (OnGuildEmojiUpdate != null)
-                        {
-                            var packet = (body.Data as JToken).ToObject<GuildEmojisUpdateEventArgs>();
+					case GatewayEventType.GuildEmojisUpdate:
+					{
+						if(OnGuildEmojiUpdate != null)
+						{
+							var packet = (body.Data as JToken).ToObject<GuildEmojisUpdateEventArgs>();
 
-                            await OnGuildEmojiUpdate(
-                                packet.guildId,
-                                packet.emojis
-                            );
-                        }
-                    }
-                    break;
+							await OnGuildEmojiUpdate(
+								packet.guildId,
+								packet.emojis
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.GuildIntegrationsUpdate:
-                    {
-                    }
-                    break;
+					case GatewayEventType.GuildIntegrationsUpdate:
+					{
+					}
+					break;
 
-                    case GatewayEventType.GuildMembersChunk:
-                    {
-                    }
-                    break;
+					case GatewayEventType.GuildMembersChunk:
+					{
+					}
+					break;
 
-                    case GatewayEventType.GuildUpdate:
-                    {
-                        if (OnGuildUpdate != null)
-                        {
-                            await OnGuildUpdate(
-                                (body.Data as JToken).ToObject<DiscordGuildPacket>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.GuildUpdate:
+					{
+						if(OnGuildUpdate != null)
+						{
+							await OnGuildUpdate(
+								(body.Data as JToken).ToObject<DiscordGuildPacket>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.MessageDelete:
-                    {
-                        if (OnMessageDelete != null)
-                        {
-                            await OnMessageDelete(
-                                (body.Data as JToken).ToObject<MessageDeleteArgs>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.MessageDelete:
+					{
+						if(OnMessageDelete != null)
+						{
+							await OnMessageDelete(
+								(body.Data as JToken).ToObject<MessageDeleteArgs>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.MessageDeleteBulk:
-                    {
-                        if (OnMessageDeleteBulk != null)
-                        {
-                            await OnMessageDeleteBulk(
-                                (body.Data as JToken).ToObject<MessageBulkDeleteEventArgs>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.MessageDeleteBulk:
+					{
+						if(OnMessageDeleteBulk != null)
+						{
+							await OnMessageDeleteBulk(
+								(body.Data as JToken).ToObject<MessageBulkDeleteEventArgs>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.MessageUpdate:
-                    {
-                        if (OnMessageUpdate != null)
-                        {
-                            await OnMessageUpdate(
-                            (body.Data as JToken).ToObject<DiscordMessagePacket>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.MessageUpdate:
+					{
+						if(OnMessageUpdate != null)
+						{
+							await OnMessageUpdate(
+							(body.Data as JToken).ToObject<DiscordMessagePacket>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.PresenceUpdate:
-                    {
-                        if (OnPresenceUpdate != null)
-                        {
-                            await OnPresenceUpdate(
-                                (body.Data as JToken).ToObject<DiscordPresencePacket>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.PresenceUpdate:
+					{
+						if(OnPresenceUpdate != null)
+						{
+							await OnPresenceUpdate(
+								(body.Data as JToken).ToObject<DiscordPresencePacket>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.Ready:
-                    {
-                        if (OnReady != null)
-                        {
-                            OnReady(
-                                (body.Data as JToken).ToObject<GatewayReadyPacket>()
-                            ).Wait();
-                        }
-                    }
-                    break;
+					case GatewayEventType.Ready:
+					{
+						if(OnReady != null)
+						{
+							OnReady(
+								(body.Data as JToken).ToObject<GatewayReadyPacket>()
+							).Wait();
+						}
+					}
+					break;
 
-                    case GatewayEventType.Resumed:
-                    {
+					case GatewayEventType.Resumed:
+					{
 
-                    }
-                    break;
+					}
+					break;
 
-                    case GatewayEventType.TypingStart:
-                    {
-                        if (OnTypingStart != null)
-                        {
-                            await OnTypingStart(
-                                (body.Data as JToken).ToObject<TypingStartEventArgs>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.TypingStart:
+					{
+						if(OnTypingStart != null)
+						{
+							await OnTypingStart(
+								(body.Data as JToken).ToObject<TypingStartEventArgs>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.UserUpdate:
-                    {
-                        if (OnUserUpdate != null)
-                        {
-                            await OnUserUpdate(
-                                (body.Data as JToken).ToObject<DiscordPresencePacket>()
-                            );
-                        }
-                    }
-                    break;
+					case GatewayEventType.UserUpdate:
+					{
+						if(OnUserUpdate != null)
+						{
+							await OnUserUpdate(
+								(body.Data as JToken).ToObject<DiscordPresencePacket>()
+							);
+						}
+					}
+					break;
 
-                    case GatewayEventType.VoiceServerUpdate:
-                    {
-                    }
-                    break;
+					case GatewayEventType.VoiceServerUpdate:
+					{
+					}
+					break;
 
-                    case GatewayEventType.VoiceStateUpdate:
-                    {
-                    }
-                    break;
-                }
+					case GatewayEventType.VoiceStateUpdate:
+					{
+					}
+					break;
+				}
 
-				if (!_config.ConsumerAutoAck)
+				if(!_config.ConsumerAutoAck)
 				{
 					_channel.BasicAck(ea.DeliveryTag, false);
 				}
 			}
-			catch (Exception e)
+			catch(Exception e)
 			{
 				Log.Error(e);
 
-				if (!_config.ConsumerAutoAck)
+				if(!_config.ConsumerAutoAck)
 				{
 					_channel.BasicNack(ea.DeliveryTag, false, false);
 				}
