@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Retsu.Consumer
 {
@@ -36,24 +34,24 @@ namespace Retsu.Consumer
 		/// </summary>
 		public bool QueueDurable { get; set; } = true;
 
-        /// <summary>
-        /// 
-        /// </summary>
+		/// <summary>
+		/// 
+		/// </summary>
 		public bool QueueExclusive { get; set; } = false;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public string QueueName { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public string QueueName { get; set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
+		/// <summary>
+		/// 
+		/// </summary>
 		public ushort PrefetchCount { get; set; } = 100;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public uint PrefetchSize { get; set; } = 0;
+		/// <summary>
+		/// 
+		/// </summary>
+		public uint PrefetchSize { get; set; } = 0;
 	}
 }
