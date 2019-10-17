@@ -45,50 +45,49 @@ namespace Retsu.Consumer
 		public event Func<GatewayMessage, Task> OnPacketSent;
 		public event Func<GatewayMessage, Task> OnPacketReceived;
 
-		private IConnection _connection;
+        private readonly IModel channel;
 
-		private IModel _channel;
-		private IModel _commandChannel;
+        private EventingBasicConsumer consumer;
 
-		private EventingBasicConsumer _consumer;
-
-		private ConsumerConfiguration _config;
+		private readonly ConsumerConfiguration config;
 
 		public RetsuConsumer(ConsumerConfiguration config)
 		{
-			_config = config;
+            this.config = config;
 
-			ConnectionFactory connectionFactory = new ConnectionFactory();
-			connectionFactory.Uri = config.ConnectionString;
-			connectionFactory.DispatchConsumersAsync = false;
+            ConnectionFactory connectionFactory = new ConnectionFactory
+            {
+                Uri = config.ConnectionString,
+                DispatchConsumersAsync = false
+            };
 
-			_connection = connectionFactory.CreateConnection();
+            var connection = connectionFactory.CreateConnection();
 
-			_connection.CallbackException += (s, args) =>
+			connection.CallbackException += (s, args) =>
 			{
 				Log.Error(args.Exception);
 			};
 
-			_connection.ConnectionRecoveryError += (s, args) =>
+			connection.ConnectionRecoveryError += (s, args) =>
 			{
 				Log.Error(args.Exception);
 			};
 
-			_connection.RecoverySucceeded += (s, args) =>
+			connection.RecoverySucceeded += (s, args) =>
 			{
 				Log.Debug("Rabbit Connection Recovered!");
 			};
 
-			_channel = _connection.CreateModel();
-			_channel.BasicQos(config.PrefetchSize, config.PrefetchCount, false);
-			_channel.ExchangeDeclare(config.ExchangeName, ExchangeType.Direct);
-			_channel.QueueDeclare(config.QueueName, config.QueueDurable, config.QueueExclusive, config.QueueAutoDelete, null);
-			_channel.QueueBind(config.QueueName, config.ExchangeName, config.ExchangeRoutingKey, null);
+			channel = connection.CreateModel();
+			channel.BasicQos(config.PrefetchSize, config.PrefetchCount, false);
+			channel.ExchangeDeclare(config.ExchangeName, ExchangeType.Direct);
+			channel.QueueDeclare(config.QueueName, config.QueueDurable, config.QueueExclusive, config.QueueAutoDelete, null);
+			channel.QueueBind(config.QueueName, config.ExchangeName, config.ExchangeRoutingKey, null);
 
-			_commandChannel = connectionFactory.CreateConnection().CreateModel();
-			_commandChannel.ExchangeDeclare(config.QueueName + "-command", ExchangeType.Fanout, true);
-			_commandChannel.QueueDeclare(config.QueueName + "-command", false, false, false);
-			_commandChannel.QueueBind(config.QueueName + "-command", config.QueueName + "-command", config.ExchangeRoutingKey, null);
+			var commandChannel = connectionFactory.CreateConnection().CreateModel();
+			commandChannel.ExchangeDeclare(config.QueueName + "-command", ExchangeType.Fanout, true);
+			commandChannel.QueueDeclare(config.QueueName + "-command", false, false, false);
+			commandChannel.QueueBind(config.QueueName + "-command", config.QueueName + "-command", config.ExchangeRoutingKey, null);
 		}
 
 		public async Task RestartAsync()
@@ -99,17 +98,17 @@ namespace Retsu.Consumer
 
 		public Task StartAsync()
 		{
-			_consumer = new EventingBasicConsumer(_channel);
-			_consumer.Received += async (ch, ea) => await OnMessageAsync(ch, ea);
+			consumer = new EventingBasicConsumer(channel);
+			consumer.Received += async (ch, ea) => await OnMessageAsync(ch, ea);
 
-			string consumerTag = _channel.BasicConsume(_config.QueueName, _config.ConsumerAutoAck, _consumer);
+			string consumerTag = channel.BasicConsume(config.QueueName, config.ConsumerAutoAck, consumer);
 			return Task.CompletedTask;
 		}
 
 		public Task StopAsync()
 		{
-			_consumer.Received -= async (ch, ea) => await OnMessageAsync(ch, ea);
-			_consumer = null;
+			consumer.Received -= async (ch, ea) => await OnMessageAsync(ch, ea);
+			consumer = null;
 			return Task.CompletedTask;
 		}
 
@@ -120,7 +119,7 @@ namespace Retsu.Consumer
 			var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
 			if(body.OpCode != GatewayOpcode.Dispatch)
 			{
-				_channel.BasicAck(ea.DeliveryTag, false);
+				channel.BasicAck(ea.DeliveryTag, false);
 				Log.Trace("packet from gateway with op '" + body.OpCode + "' received");
 				return;
 			}
@@ -439,18 +438,18 @@ namespace Retsu.Consumer
 					break;
 				}
 
-				if(!_config.ConsumerAutoAck)
+				if(!config.ConsumerAutoAck)
 				{
-					_channel.BasicAck(ea.DeliveryTag, false);
+					channel.BasicAck(ea.DeliveryTag, false);
 				}
 			}
 			catch(Exception e)
 			{
 				Log.Error(e);
 
-				if(!_config.ConsumerAutoAck)
+				if(!config.ConsumerAutoAck)
 				{
-					_channel.BasicNack(ea.DeliveryTag, false, false);
+					channel.BasicNack(ea.DeliveryTag, false, false);
 				}
 			}
 			Log.Debug($"{body.EventName}: {sw.ElapsedMilliseconds}ms");
@@ -463,7 +462,7 @@ namespace Retsu.Consumer
 			msg.ShardId = shardId;
 			msg.Data = payload;
 
-			_channel.BasicPublish("gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
+			channel.BasicPublish("gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
 			return Task.CompletedTask;
 		}
 	}
