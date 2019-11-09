@@ -41,11 +41,12 @@ namespace Miki.Discord.Common
 				return null;
 			}
 
-			CommandMessage msg = new CommandMessage();
-			msg.ShardId = shardId;
-			msg.Opcode = message.OpCode.Value;
-			msg.Data = message.Data as T;
-			return msg;
-		}
+            return new CommandMessage
+            {
+                ShardId = shardId,
+                Opcode = message.OpCode.Value,
+                Data = message.Data as T
+            };
+        }
 	}
 }

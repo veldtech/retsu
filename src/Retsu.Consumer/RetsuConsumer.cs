@@ -17,7 +17,9 @@ using System.Threading.Tasks;
 
 namespace Retsu.Consumer
 {
-	public partial class RetsuConsumer : IGateway
+    using Miki.Discord.Common.Packets.API;
+
+    public partial class RetsuConsumer : IGateway
 	{
 		public Func<DiscordChannelPacket, Task> OnChannelCreate { get; set; }
 		public Func<DiscordChannelPacket, Task> OnChannelUpdate { get; set; }

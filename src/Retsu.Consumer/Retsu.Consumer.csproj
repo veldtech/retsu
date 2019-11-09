@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\miki.discord\Miki.Discord.Common\Miki.Discord.Common.csproj" />
     <ProjectReference Include="..\Retsu.Models\Retsu.Models.csproj" />
   </ItemGroup>
 
