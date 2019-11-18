@@ -5,11 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Miki.Discord.Common" Version="3.1.2" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\miki.discord\Miki.Discord.Common\Miki.Discord.Common.csproj" />
   </ItemGroup>
 
 </Project>

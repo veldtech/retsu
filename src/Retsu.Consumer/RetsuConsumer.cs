@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 namespace Retsu.Consumer
 {
     using Miki.Discord.Common.Packets.API;
+    using Models.Communication;
 
     public partial class RetsuConsumer : IGateway
 	{
@@ -459,12 +460,14 @@ namespace Retsu.Consumer
 
 		public Task SendAsync(int shardId, GatewayOpcode opcode, object payload)
 		{
-			CommandMessage msg = new CommandMessage();
-			msg.Opcode = opcode;
-			msg.ShardId = shardId;
-			msg.Data = payload;
+            CommandMessage msg = new CommandMessage
+            {
+                Opcode = opcode,
+                ShardId = shardId,
+                Data = payload
+            };
 
-			channel.BasicPublish("gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
+            channel.BasicPublish("gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
 			return Task.CompletedTask;
 		}
 	}
