@@ -1,24 +1,23 @@
-﻿using Miki.Discord.Common;
-using Miki.Discord.Common.Events;
-using Miki.Discord.Common.Gateway;
-using Miki.Discord.Common.Gateway.Packets;
-using Miki.Discord.Common.Packets;
-using Miki.Discord.Common.Packets.Events;
-using Miki.Discord.Rest;
-using Miki.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
-using System;
-using System.Diagnostics;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Retsu.Consumer
+﻿namespace Retsu.Consumer
 {
-    using Miki.Discord.Common.Packets.API;
-    using Models.Communication;
+	using Miki.Discord.Common;
+	using Miki.Discord.Common.Events;
+	using Miki.Discord.Common.Gateway;
+	using Miki.Discord.Common.Gateway.Packets;
+	using Miki.Discord.Common.Packets;
+	using Miki.Discord.Common.Packets.Events;
+	using Miki.Discord.Rest;
+	using Miki.Logging;
+	using Newtonsoft.Json;
+	using Newtonsoft.Json.Linq;
+	using RabbitMQ.Client;
+	using RabbitMQ.Client.Events;
+	using System;
+	using System.Diagnostics;
+	using System.Text;
+	using System.Threading.Tasks;
+	using Miki.Discord.Common.Packets.API;
+    using Retsu.Models.Communication;
 
     public partial class RetsuConsumer : IGateway
 	{

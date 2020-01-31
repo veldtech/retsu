@@ -1,8 +1,7 @@
-﻿using System;
-
-namespace Retsu.Consumer
+﻿namespace Retsu.Consumer
 {
-	public class ConsumerConfiguration
+    using System;
+    public class ConsumerConfiguration
 	{
 		/// <summary>
 		/// The connection uri to connect to the message queue.
