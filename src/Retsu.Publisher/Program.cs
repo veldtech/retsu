@@ -11,6 +11,7 @@
     using Miki.Discord.Common.Gateway;
     using Miki.Discord.Gateway;
     using Miki.Discord.Gateway.Connection;
+    using Miki.Discord.Gateway.Converters;
     using Miki.Discord.Gateway.Ratelimiting;
     using Miki.Logging;
     using Miki.Serialization.Protobuf;
@@ -26,6 +27,7 @@
         private static GatewayConnectionCluster cluster;
         private static ApplicationConfig config;
         private static IModel pusherModel;
+        private static JsonSerializerOptions options;
 
         private static void Main()
             => MainAsync().GetAwaiter().GetResult();
@@ -50,11 +52,20 @@
                     allShardIds.Add(i);
                 }
 
+                options = new JsonSerializerOptions
+                {
+                    Converters =
+                    {
+                        new StringToUlongConverter()
+                    }
+                };
+
                 cluster = new GatewayConnectionCluster(new GatewayProperties
                 {
                     Compressed = true,
                     Encoding = GatewayEncoding.Json,
                     Ratelimiter = new CacheBasedRatelimiter(cache),
+                    SerializerOptions = options,
                     ShardCount = config.Discord.ShardCount,
                     ShardId = 0,
                     Token = config.Discord.Token,
@@ -93,6 +104,13 @@
 
         private static Task OnPacketReceivedAsync(GatewayMessage arg)
         {
+            if(arg.EventName == "READY")
+            {
+                var ready = JsonSerializer.Deserialize<GatewayReadyPacket>(
+                    ((JsonElement)arg.Data).GetRawText(), options);
+                Log.Message($"Shard {ready.CurrentShard} is connected");
+            }
+
             if(config.IgnorePackets.Contains(arg.EventName))
             {
                 return Task.CompletedTask;
