@@ -3,23 +3,20 @@
 	using Miki.Discord.Common;
 	using Miki.Discord.Common.Events;
 	using Miki.Discord.Common.Gateway;
-	using Miki.Discord.Common.Gateway.Packets;
 	using Miki.Discord.Common.Packets;
 	using Miki.Discord.Common.Packets.Events;
-	using Miki.Discord.Rest;
 	using Miki.Logging;
-	using Newtonsoft.Json;
-	using Newtonsoft.Json.Linq;
 	using RabbitMQ.Client;
 	using RabbitMQ.Client.Events;
 	using System;
 	using System.Diagnostics;
 	using System.Text;
-	using System.Threading.Tasks;
+    using System.Text.Json;
+    using System.Threading.Tasks;
 	using Miki.Discord.Common.Packets.API;
     using Retsu.Models.Communication;
 
-    public partial class RetsuConsumer : IGateway
+    public class RetsuConsumer : IGateway
 	{
 		public Func<DiscordChannelPacket, Task> OnChannelCreate { get; set; }
 		public Func<DiscordChannelPacket, Task> OnChannelUpdate { get; set; }
@@ -109,7 +106,6 @@
 
 		public Task StopAsync()
 		{
-			consumer.Received -= async (ch, ea) => await OnMessageAsync(ch, ea);
 			consumer = null;
 			return Task.CompletedTask;
 		}
@@ -118,7 +114,7 @@
 		{
 			var payload = Encoding.UTF8.GetString(ea.Body);
 			var sw = Stopwatch.StartNew();
-			var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
+			var body = JsonSerializer.Deserialize<GatewayMessage>(payload);
 			if(body.OpCode != GatewayOpcode.Dispatch)
 			{
 				channel.BasicAck(ea.DeliveryTag, false);
@@ -136,8 +132,8 @@
 						if(OnMessageCreate != null)
 						{
 							await OnMessageCreate(
-								(body.Data as JToken).ToObject<DiscordMessagePacket>()
-							);
+								JsonSerializer.Deserialize<DiscordMessagePacket>(
+                                    ((JsonElement)body.Data).GetRawText()));
 						}
 					}
 					break;
@@ -146,7 +142,8 @@
 					{
 						if(OnGuildCreate != null)
 						{
-							var guild = (body.Data as JToken).ToObject<DiscordGuildPacket>();
+							var guild = JsonSerializer.Deserialize<DiscordGuildPacket>(
+                                ((JsonElement)body.Data).GetRawText());
 
 							await OnGuildCreate(
 								guild
@@ -159,11 +156,10 @@
 					{
 						if(OnGuildCreate != null)
 						{
-							var channel = (body.Data as JToken).ToObject<DiscordChannelPacket>();
+							var discordChannel = JsonSerializer.Deserialize<DiscordChannelPacket>(
+                                ((JsonElement)body.Data).GetRawText());
 
-							await OnChannelCreate(
-								channel
-							);
+							await OnChannelCreate(discordChannel);
 						}
 					}
 					break;
@@ -171,8 +167,9 @@
 					case GatewayEventType.GuildMemberRemove:
 					{
 						if(OnGuildMemberRemove != null)
-						{
-							var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
+                        {
+                            var packet = JsonSerializer.Deserialize<GuildIdUserArgs>(
+                                ((JsonElement) body.Data).GetRawText());
 
 							await OnGuildMemberRemove(
 								packet.guildId,
@@ -184,7 +181,9 @@
 
 					case GatewayEventType.GuildMemberAdd:
 					{
-						DiscordGuildMemberPacket guildMember = (body.Data as JToken).ToObject<DiscordGuildMemberPacket>();
+						DiscordGuildMemberPacket guildMember 
+                            = JsonSerializer.Deserialize<DiscordGuildMemberPacket>(
+                                ((JsonElement)body.Data).GetRawText());
 
 						if(OnGuildMemberAdd != null)
 						{
@@ -195,7 +194,9 @@
 
 					case GatewayEventType.GuildMemberUpdate:
 					{
-						GuildMemberUpdateEventArgs guildMember = (body.Data as JToken).ToObject<GuildMemberUpdateEventArgs>();
+						GuildMemberUpdateEventArgs guildMember = 
+                            JsonSerializer.Deserialize<GuildMemberUpdateEventArgs>(
+                                ((JsonElement)body.Data).GetRawText());
 
 						if(OnGuildMemberUpdate != null)
 						{
@@ -208,7 +209,8 @@
 
 					case GatewayEventType.GuildRoleCreate:
 					{
-						RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
+						RoleEventArgs role = JsonSerializer.Deserialize<RoleEventArgs>(
+                            ((JsonElement)body.Data).GetRawText());
 
 						if(OnGuildRoleCreate != null)
 						{
@@ -224,7 +226,8 @@
 					{
 						if(OnGuildRoleDelete != null)
 						{
-							RoleDeleteEventArgs role = (body.Data as JToken).ToObject<RoleDeleteEventArgs>();
+							RoleDeleteEventArgs role = JsonSerializer.Deserialize<RoleDeleteEventArgs>(
+                                ((JsonElement)body.Data).GetRawText());
 
 							await OnGuildRoleDelete(
 								role.GuildId,
@@ -236,7 +239,8 @@
 
 					case GatewayEventType.GuildRoleUpdate:
 					{
-						RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
+						RoleEventArgs role = JsonSerializer.Deserialize<RoleEventArgs>(
+                            ((JsonElement)body.Data).GetRawText());
 
 						if(OnGuildRoleUpdate != null)
 						{
@@ -253,8 +257,8 @@
 						if(OnChannelDelete != null)
 						{
 							await OnChannelDelete(
-								(body.Data as JToken).ToObject<DiscordChannelPacket>()
-							);
+                                    JsonSerializer.Deserialize<DiscordChannelPacket>(
+                                        ((JsonElement)body.Data).GetRawText()));
 						}
 					}
 					break;
@@ -264,8 +268,8 @@
 						if(OnChannelUpdate != null)
 						{
 							await OnChannelUpdate(
-								(body.Data as JToken).ToObject<DiscordChannelPacket>()
-							);
+                                    JsonSerializer.Deserialize<DiscordChannelPacket>(
+                                        ((JsonElement)body.Data).GetRawText()));
 						}
 					}
 					break;
@@ -274,7 +278,8 @@
 					{
 						if(OnGuildBanAdd != null)
 						{
-							var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
+							var packet = JsonSerializer.Deserialize<GuildIdUserArgs>(
+                                ((JsonElement)body.Data).GetRawText());
 
 							await OnGuildBanAdd(
 								packet.guildId,
@@ -288,7 +293,8 @@
 					{
 						if(OnGuildBanRemove != null)
 						{
-							var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
+							var packet = JsonSerializer.Deserialize<GuildIdUserArgs>(
+                                ((JsonElement)body.Data).GetRawText());
 
 							await OnGuildBanRemove(
 								packet.guildId,
@@ -302,7 +308,8 @@
 					{
 						if(OnGuildDelete != null)
 						{
-							var packet = (body.Data as JToken).ToObject<DiscordGuildUnavailablePacket>();
+							var packet = JsonSerializer.Deserialize<DiscordGuildUnavailablePacket>(
+                                ((JsonElement)body.Data).GetRawText());
 
 							await OnGuildDelete(
 								packet
@@ -315,7 +322,8 @@
 					{
 						if(OnGuildEmojiUpdate != null)
 						{
-							var packet = (body.Data as JToken).ToObject<GuildEmojisUpdateEventArgs>();
+							var packet = JsonSerializer.Deserialize<GuildEmojisUpdateEventArgs>(
+                                ((JsonElement)body.Data).GetRawText());
 
 							await OnGuildEmojiUpdate(
 								packet.guildId,
@@ -337,68 +345,66 @@
 
 					case GatewayEventType.GuildUpdate:
 					{
-						if(OnGuildUpdate != null)
-						{
-							await OnGuildUpdate(
-								(body.Data as JToken).ToObject<DiscordGuildPacket>()
-							);
-						}
-					}
+                        if(OnGuildUpdate != null)
+                        {
+                            await OnGuildUpdate(
+                                JsonSerializer.Deserialize<DiscordGuildPacket>(
+                                    ((JsonElement) body.Data).GetRawText()));
+                        }
+                    }
 					break;
 
 					case GatewayEventType.MessageDelete:
 					{
 						if(OnMessageDelete != null)
-						{
-							await OnMessageDelete(
-								(body.Data as JToken).ToObject<MessageDeleteArgs>()
-							);
-						}
+                        {
+                            await OnMessageDelete(
+                                JsonSerializer.Deserialize<MessageDeleteArgs>(
+                                    ((JsonElement) body.Data).GetRawText()));
+                        }
 					}
 					break;
 
 					case GatewayEventType.MessageDeleteBulk:
 					{
 						if(OnMessageDeleteBulk != null)
-						{
-							await OnMessageDeleteBulk(
-								(body.Data as JToken).ToObject<MessageBulkDeleteEventArgs>()
-							);
-						}
+                        {
+                            await OnMessageDeleteBulk(
+                                JsonSerializer.Deserialize<MessageBulkDeleteEventArgs>(
+                                    ((JsonElement) body.Data).GetRawText()));
+                        }
 					}
 					break;
 
 					case GatewayEventType.MessageUpdate:
 					{
 						if(OnMessageUpdate != null)
-						{
-							await OnMessageUpdate(
-							(body.Data as JToken).ToObject<DiscordMessagePacket>()
-							);
-						}
+                        {
+                            await OnMessageUpdate(
+                                JsonSerializer.Deserialize<DiscordMessagePacket>(
+                                    ((JsonElement) body.Data).GetRawText()));
+                        }
 					}
 					break;
 
 					case GatewayEventType.PresenceUpdate:
 					{
 						if(OnPresenceUpdate != null)
-						{
-							await OnPresenceUpdate(
-								(body.Data as JToken).ToObject<DiscordPresencePacket>()
-							);
-						}
+                        {
+                            await OnPresenceUpdate(
+                                JsonSerializer.Deserialize<DiscordPresencePacket>(
+                                    ((JsonElement) body.Data).GetRawText()));
+                        }
 					}
 					break;
 
 					case GatewayEventType.Ready:
-					{
-						if(OnReady != null)
-						{
-							OnReady(
-								(body.Data as JToken).ToObject<GatewayReadyPacket>()
-							).Wait();
-						}
-					}
+                    {
+                        OnReady?.Invoke(
+                                JsonSerializer.Deserialize<GatewayReadyPacket>(
+                                    ((JsonElement) body.Data).GetRawText()))
+                            .Wait();
+                    }
 					break;
 
 					case GatewayEventType.Resumed:
@@ -410,22 +416,22 @@
 					case GatewayEventType.TypingStart:
 					{
 						if(OnTypingStart != null)
-						{
-							await OnTypingStart(
-								(body.Data as JToken).ToObject<TypingStartEventArgs>()
-							);
-						}
+                        {
+                            await OnTypingStart(
+                                JsonSerializer.Deserialize<TypingStartEventArgs>(
+                                    ((JsonElement) body.Data).GetRawText()));
+                        }
 					}
 					break;
 
 					case GatewayEventType.UserUpdate:
 					{
 						if(OnUserUpdate != null)
-						{
-							await OnUserUpdate(
-								(body.Data as JToken).ToObject<DiscordPresencePacket>()
-							);
-						}
+                        {
+                            await OnUserUpdate(
+                                JsonSerializer.Deserialize<DiscordPresencePacket>(
+                                    ((JsonElement) body.Data).GetRawText()));
+                        }
 					}
 					break;
 
@@ -466,7 +472,8 @@
                 Data = payload
             };
 
-            channel.BasicPublish("gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
+            channel.BasicPublish(
+                "gateway-command", "", body: Encoding.UTF8.GetBytes(JsonSerializer.Serialize(msg)));
 			return Task.CompletedTask;
 		}
 	}

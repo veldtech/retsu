@@ -2,7 +2,6 @@
 {
     using System.Runtime.Serialization;
     using Miki.Discord.Common.Gateway;
-    using Miki.Discord.Common.Gateway.Packets;
 
     /// <summary>
 	/// Communication pipeline model for consumer-to-publisher messaging.

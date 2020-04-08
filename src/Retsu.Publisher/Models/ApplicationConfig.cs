@@ -1,48 +1,48 @@
-﻿using Miki.Logging;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-
-namespace Sharder.App
+﻿namespace Sharder.App
 {
+    using Miki.Logging;
+    using System.Collections.Generic;
+    using System.Text.Json.Serialization;
+
     public class ApplicationConfig
     {
         public class DiscordConfig
         {
-            [JsonProperty("token")]
+            [JsonPropertyName("token")]
             public string Token { get; set; } = "";
 
-            [JsonProperty("shard_count")]
+            [JsonPropertyName("shard_count")]
             public int ShardCount { get; set; }
 
-            [JsonProperty("shard_start_index")]
+            [JsonPropertyName("shard_start_index")]
             public int ShardIndex { get; set; }
 
-            [JsonProperty("shard_num")]
+            [JsonPropertyName("shard_num")]
             public int ShardAmount { get; set; }
         }
 
         public class MQConfig
         {
-            [JsonProperty("url")]
+            [JsonPropertyName("url")]
             public string Url { get; set; } = "amqp://localhost";
         }
 
-        [JsonProperty("discord")]
+        [JsonPropertyName("discord")]
         public DiscordConfig Discord { get; set; } = new DiscordConfig();
 
-        [JsonProperty("ignore_packets")]
+        [JsonPropertyName("ignore_packets")]
         public IEnumerable<string> IgnorePackets { get; set; } = new List<string>();
 
-        [JsonProperty("loglevel")]
+        [JsonPropertyName("loglevel")]
         public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
-        [JsonProperty("msg_queue")]
+        [JsonPropertyName("msg_queue")]
         public MQConfig MessageQueue { get; set; } = new MQConfig();
 
-        [JsonProperty("redis_url")]
+        [JsonPropertyName("redis_url")]
         public string RedisUrl { get; set; } = "";
 
-        [JsonProperty("sentry_url")]
+        [JsonPropertyName("sentry_url")]
         public string SentryUrl { get; set; }
     }
 }
