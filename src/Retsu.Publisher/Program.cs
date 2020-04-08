@@ -34,18 +34,27 @@
 
         private static async Task MainAsync()
         {
+            Log.Message("Started Retsu");
+
             new LogBuilder()
                 .AddLogEvent((msg, lvl) => { if(lvl >= config.LogLevel) Console.WriteLine(msg); })
                 .AddExceptionEvent((ex, lvl) => SentrySdk.CaptureException(ex))
                 .Apply();
 
+            Log.Message("Logger set up!");
+
             await LoadConfigAsync();
+
+            Log.Message("Config loaded.");
 
             using (SentrySdk.Init(config.SentryUrl))
             {
+                Log.Message("Error handler setup.");
+
                 var redis = await ConnectionMultiplexer.ConnectAsync(config.RedisUrl);
                 var cache = new StackExchangeCacheClient(new ProtobufSerializer(), redis);
 
+                Log.Message("Cache connected");
                 List<int> allShardIds = new List<int>();
                 for (var i = config.Discord.ShardIndex; i < config.Discord.ShardIndex + config.Discord.ShardAmount; i++)
                 {
@@ -96,8 +105,13 @@
                 var consumer = new AsyncEventingBasicConsumer(commandModel);
                 consumer.Received += OnCommandReceivedAsync;
                 commandModel.BasicConsume(queue.QueueName, false, consumer);
+                Log.Message("Set up RabbitMQ");
 
                 await cluster.StartAsync();
+                Log.Message("Discord gateway running");
+
+
+                Log.Message("Everything OK");
                 await Task.Delay(-1);
             }
         }
