@@ -16,14 +16,10 @@
     public class GatewayConnectionCluster
     {
         private readonly List<GatewayConnection> connections = new List<GatewayConnection>();
-        private GatewayProperties properties;
-
         public event Func<GatewayMessage, Task> OnPacketReceived;
 
         public GatewayConnectionCluster(GatewayProperties properties, IEnumerable<int> allShardIds)
         {
-            this.properties = properties;
-
             // Spawn connection shards
             foreach (var i in allShardIds)
             {
