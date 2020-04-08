@@ -14,7 +14,7 @@ steps:
   inputs:
     command: 'publish'
     publishWebProjects: false
-    projects: 'src/**/*.csproj'
+    projects: 'src/Retsu.Publisher/Retsu.Publisher.csproj'
     arguments: '-o $(Build.ArtifactStagingDirectory)'
 - task: DotNetCoreCLI@2
   inputs:
