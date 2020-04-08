@@ -9,6 +9,7 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using Miki.Logging;
 
     /// <summary>
     /// Like Miki.Discord.Gateway.GatewayCluster, but only for raw connections.
@@ -42,6 +43,8 @@
         {
             foreach(var s in connections)
             {
+                Log.Trace("Spawning shard #" + s.ShardId);
+
                 s.OnPacketReceived += OnPacketReceived;
                 await s.StartAsync();
                 

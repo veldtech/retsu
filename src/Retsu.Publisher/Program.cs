@@ -17,6 +17,7 @@
     using Miki.Serialization.Protobuf;
     using RabbitMQ.Client;
     using RabbitMQ.Client.Events;
+    using RabbitMQ.Client.Exceptions;
     using Retsu.Models.Communication;
     using Sentry;
     using Sharder.App;
@@ -80,7 +81,8 @@
                 ConnectionFactory conn = new ConnectionFactory
                 {
                     Uri = new Uri(config.MessageQueue.Url),
-                    DispatchConsumersAsync = true
+                    DispatchConsumersAsync = true,
+                    UseBackgroundThreadsForIO = true,
                 };
 
                 using var connection = conn.CreateConnection();
@@ -124,8 +126,17 @@
             {
                 return Task.CompletedTask;
             }
-            pusherModel.BasicPublish(
-                "gateway", "", body: Encoding.UTF8.GetBytes(JsonSerializer.Serialize(arg)));
+
+            try
+            {
+                pusherModel.BasicPublish(
+                    "gateway", "", body: Encoding.UTF8.GetBytes(JsonSerializer.Serialize(arg)));
+            }
+            catch(AlreadyClosedException)
+            {
+                Log.Warning($"Event '{arg.EventName}' missed due to AMQP client closed.");
+            }
+
             return Task.CompletedTask;
         }
 
