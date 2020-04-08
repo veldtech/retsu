@@ -34,15 +34,10 @@
 
         private static async Task MainAsync()
         {
-            Log.Message("Started Retsu");
-
             new LogBuilder()
                 .AddLogEvent((msg, lvl) => { if(lvl >= config.LogLevel) Console.WriteLine(msg); })
                 .AddExceptionEvent((ex, lvl) => SentrySdk.CaptureException(ex))
                 .Apply();
-
-            Log.Message("Logger set up!");
-
             await LoadConfigAsync();
 
             Log.Message("Config loaded.");
