@@ -46,8 +46,10 @@
                 Log.Trace("Spawning shard #" + s.ShardId);
 
                 s.OnPacketReceived += OnPacketReceived;
+
                 await s.StartAsync();
-                
+                await Task.Delay(5000);
+
             }
         }
 
