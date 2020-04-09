@@ -43,12 +43,11 @@
         {
             foreach(var s in connections)
             {
-                Log.Trace("Spawning shard #" + s.ShardId);
+                Log.Debug("Spawning shard #" + s.ShardId);
 
                 s.OnPacketReceived += OnPacketReceived;
 
                 await s.StartAsync();
-                await Task.Delay(5000);
 
             }
         }
