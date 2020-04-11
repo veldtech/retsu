@@ -40,11 +40,11 @@
 		public Func<MessageDeleteArgs, System.Threading.Tasks.Task> OnMessageDelete { get; set; }
 		public Func<MessageBulkDeleteEventArgs, System.Threading.Tasks.Task> OnMessageDeleteBulk { get; set; }
 		public Func<DiscordPresencePacket, System.Threading.Tasks.Task> OnPresenceUpdate { get; set; }
-		public Func<Miki.Discord.Common.Gateway.Packets.GatewayReadyPacket, System.Threading.Tasks.Task> OnReady { get; set; }
-		public Func<TypingStartEventArgs, System.Threading.Tasks.Task> OnTypingStart { get; set; }
-		public Func<DiscordPresencePacket, System.Threading.Tasks.Task> OnUserUpdate { get; set; }
-        public event Func<GatewayMessage, System.Threading.Tasks.Task> OnPacketSent;
-        public event Func<GatewayMessage, System.Threading.Tasks.Task> OnPacketReceived;
+		public Func<GatewayReadyPacket, Task> OnReady { get; set; }
+		public Func<TypingStartEventArgs, Task> OnTypingStart { get; set; }
+		public Func<DiscordPresencePacket, Task> OnUserUpdate { get; set; }
+        public Func<GatewayMessage, Task> OnPacketSent { get; set; }
+        public Func<GatewayMessage, Task> OnPacketReceived { get; set; }
 
         private readonly IModel channel;
 
@@ -136,9 +136,9 @@
 			try
 			{
 				Log.Trace("packet with the op-code '" + body.EventName + "' received.");
-				switch(Enum.Parse(typeof(Miki.Discord.Rest.GatewayEventType), body.EventName.Replace("_", ""), true))
+				switch(Enum.Parse(typeof(GatewayEventType), body.EventName.Replace("_", ""), true))
 				{
-					case Miki.Discord.Rest.GatewayEventType.MessageCreate:
+					case GatewayEventType.MessageCreate:
 					{
 						if(OnMessageCreate != null)
 						{
@@ -148,7 +148,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildCreate:
+					case GatewayEventType.GuildCreate:
 					{
 						if(OnGuildCreate != null)
 						{
@@ -161,7 +161,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.ChannelCreate:
+					case GatewayEventType.ChannelCreate:
 					{
 						if(OnGuildCreate != null)
 						{
@@ -172,7 +172,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildMemberRemove:
+					case GatewayEventType.GuildMemberRemove:
 					{
 						if(OnGuildMemberRemove != null)
                         {
@@ -186,7 +186,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildMemberAdd:
+					case GatewayEventType.GuildMemberAdd:
 					{
 						DiscordGuildMemberPacket guildMember 
                             = (body.Data as JToken).ToObject<DiscordGuildMemberPacket>();
@@ -198,7 +198,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildMemberUpdate:
+					case GatewayEventType.GuildMemberUpdate:
 					{
 						GuildMemberUpdateEventArgs guildMember =
                             (body.Data as JToken).ToObject<GuildMemberUpdateEventArgs>();
@@ -212,7 +212,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildRoleCreate:
+					case GatewayEventType.GuildRoleCreate:
 					{
 						RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
 
@@ -226,7 +226,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildRoleDelete:
+					case GatewayEventType.GuildRoleDelete:
 					{
 						if(OnGuildRoleDelete != null)
 						{
@@ -241,7 +241,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildRoleUpdate:
+					case GatewayEventType.GuildRoleUpdate:
 					{
 						RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
 
@@ -255,7 +255,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.ChannelDelete:
+					case GatewayEventType.ChannelDelete:
 					{
 						if(OnChannelDelete != null)
 						{
@@ -265,7 +265,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.ChannelUpdate:
+					case GatewayEventType.ChannelUpdate:
 					{
 						if(OnChannelUpdate != null)
 						{
@@ -275,7 +275,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildBanAdd:
+					case GatewayEventType.GuildBanAdd:
 					{
 						if(OnGuildBanAdd != null)
 						{
@@ -289,7 +289,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildBanRemove:
+					case GatewayEventType.GuildBanRemove:
 					{
 						if(OnGuildBanRemove != null)
 						{
@@ -303,7 +303,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildDelete:
+					case GatewayEventType.GuildDelete:
 					{
 						if(OnGuildDelete != null)
 						{
@@ -317,7 +317,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildEmojisUpdate:
+					case GatewayEventType.GuildEmojisUpdate:
 					{
 						if(OnGuildEmojiUpdate != null)
                         {
@@ -331,17 +331,17 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildIntegrationsUpdate:
+					case GatewayEventType.GuildIntegrationsUpdate:
 					{
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildMembersChunk:
+					case GatewayEventType.GuildMembersChunk:
 					{
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.GuildUpdate:
+					case GatewayEventType.GuildUpdate:
 					{
                         if(OnGuildUpdate != null)
                         {
@@ -351,7 +351,7 @@
                     }
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.MessageDelete:
+					case GatewayEventType.MessageDelete:
 					{
 						if(OnMessageDelete != null)
                         {
@@ -361,7 +361,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.MessageDeleteBulk:
+					case GatewayEventType.MessageDeleteBulk:
 					{
 						if(OnMessageDeleteBulk != null)
                         {
@@ -371,7 +371,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.MessageUpdate:
+					case GatewayEventType.MessageUpdate:
 					{
 						if(OnMessageUpdate != null)
                         {
@@ -381,7 +381,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.PresenceUpdate:
+					case GatewayEventType.PresenceUpdate:
 					{
 						if(OnPresenceUpdate != null)
                         {
@@ -391,22 +391,22 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.Ready:
+					case GatewayEventType.Ready:
 					{
 							OnReady.InvokeAsync(
-								(body.Data as Newtonsoft.Json.Linq.JToken).ToObject<Miki.Discord.Common.Gateway.Packets.GatewayReadyPacket>()
+								(body.Data as JToken).ToObject<GatewayReadyPacket>()
 							).Wait();
 					}
 
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.Resumed:
+					case GatewayEventType.Resumed:
 					{
 
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.TypingStart:
+					case GatewayEventType.TypingStart:
 					{
 						if(OnTypingStart != null)
                         {
@@ -416,7 +416,7 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.UserUpdate:
+					case GatewayEventType.UserUpdate:
 					{
 						if(OnUserUpdate != null)
                         {
@@ -426,12 +426,12 @@
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.VoiceServerUpdate:
+					case GatewayEventType.VoiceServerUpdate:
 					{
 					}
 					break;
 
-					case Miki.Discord.Rest.GatewayEventType.VoiceStateUpdate:
+					case GatewayEventType.VoiceStateUpdate:
 					{
 					}
 					break;
