@@ -1,6 +1,5 @@
 ﻿namespace Retsu.Publisher
 {
-    using Miki.Discord.Common;
     using Miki.Discord.Common.Gateway;
     using Miki.Discord.Gateway;
     using Miki.Discord.Gateway.Connection;
@@ -33,6 +32,7 @@
                     ShardId = i,
                     Token = properties.Token,
                     Version = properties.Version,
+                    Intents = properties.Intents
                 }));
             }
         }

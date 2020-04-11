@@ -1,6 +1,7 @@
 ﻿namespace Retsu.Publisher
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -29,6 +30,9 @@
         private static ApplicationConfig config;
         private static IModel pusherModel;
         private static JsonSerializerOptions options;
+
+        private static ConcurrentDictionary<string, object> queueSet =
+            new ConcurrentDictionary<string, object>();
 
         private static void Main()
             => MainAsync().GetAwaiter().GetResult();
@@ -91,8 +95,6 @@
                 ConnectionFactory conn = new ConnectionFactory
                 {
                     Uri = new Uri(config.MessageQueue.Url),
-                    DispatchConsumersAsync = true,
-                    UseBackgroundThreadsForIO = true,
                 };
 
                 using var connection = conn.CreateConnection();
@@ -100,8 +102,6 @@
                 using var commandModel = connection.CreateModel();
 
                 pusherModel.ExchangeDeclare("gateway", "direct", true);
-                pusherModel.QueueDeclare("gateway", true, false, false);
-                pusherModel.QueueBind("gateway", "gateway", "");
                 cluster.OnPacketReceived += OnPacketReceivedAsync;
 
                 commandModel.ExchangeDeclare("gateway-command", "fanout", true);
@@ -136,10 +136,18 @@
                 return Task.CompletedTask;
             }
 
+            if(!queueSet.ContainsKey(arg.EventName))
+            {
+                var queue = GetQueueNameFromEventName(arg.EventName);
+                pusherModel.QueueDeclare(queue, true, false, false);
+                pusherModel.QueueBind(queue, "gateway", arg.EventName);
+                queueSet.TryAdd(arg.EventName, null);
+            }
+
             try
             {
                 pusherModel.BasicPublish(
-                    "gateway", "", body: Encoding.UTF8.GetBytes(JsonSerializer.Serialize(arg)));
+                    "gateway", arg.EventName, body: Encoding.UTF8.GetBytes(JsonSerializer.Serialize(arg)));
             }
             catch(AlreadyClosedException)
             {
@@ -147,6 +155,11 @@
             }
 
             return Task.CompletedTask;
+        }
+
+        private static string GetQueueNameFromEventName(string eventName)
+        {
+            return "gateway:" + eventName;
         }
 
         private static async Task OnCommandReceivedAsync(object sender, BasicDeliverEventArgs e)
