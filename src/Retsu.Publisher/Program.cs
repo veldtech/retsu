@@ -65,9 +65,17 @@
                     }
                 };
 
+                var intents = GatewayIntents.AllDefault
+                              & ~GatewayIntents.DirectMessageReactions
+                              & ~GatewayIntents.DirectMessageTyping
+                              & ~GatewayIntents.GuildVoiceStates
+                              & ~GatewayIntents.GuildWebhooks
+                              & ~GatewayIntents.GuildMessageTyping
+                              & ~GatewayIntents.GuildIntegrations
+                              & ~GatewayIntents.GuildInvites;
+
                 cluster = new GatewayConnectionCluster(new GatewayProperties
                 {
-                    Compressed = true,
                     Encoding = GatewayEncoding.Json,
                     Ratelimiter = new CacheBasedRatelimiter(cache),
                     SerializerOptions = options,
@@ -75,7 +83,9 @@
                     ShardId = 0,
                     Token = config.Discord.Token,
                     Version = GatewayConstants.DefaultVersion,
-                    AllowNonDispatchEvents = false
+                    AllowNonDispatchEvents = false,
+                    Compressed = false,
+                    Intents = intents
                 }, allShardIds);
 
                 ConnectionFactory conn = new ConnectionFactory
@@ -106,8 +116,7 @@
 
                 await cluster.StartAsync();
                 Log.Message("Discord gateway running");
-
-
+                
                 Log.Message("Everything OK");
                 await Task.Delay(-1);
             }

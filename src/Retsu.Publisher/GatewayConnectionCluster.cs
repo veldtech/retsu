@@ -7,12 +7,11 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
     using Miki.Logging;
 
     /// <summary>
-    /// Like Miki.Discord.Gateway.GatewayCluster, but only for raw connections.
+    /// Like <see cref="GatewayCluster"/>, but only for raw connections.
     /// </summary>
     public class GatewayConnectionCluster
     {
@@ -34,7 +33,6 @@
                     ShardId = i,
                     Token = properties.Token,
                     Version = properties.Version,
-                    WebSocketClientFactory = properties.WebSocketClientFactory
                 }));
             }
         }
