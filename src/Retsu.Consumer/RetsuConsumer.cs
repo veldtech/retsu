@@ -13,13 +13,14 @@
 	using RabbitMQ.Client;
 	using RabbitMQ.Client.Events;
 	using System;
-	using System.Diagnostics;
-	using System.Text;
+    using System.Collections.Concurrent;
+    using System.Text;
 	using System.Threading.Tasks;
-	using Miki.Discord.Common.Packets.API;
+    using Miki.Discord.Common.Extensions;
+    using Miki.Discord.Common.Packets.API;
     using Retsu.Models.Communication;
 
-    public partial class RetsuConsumer : IGateway
+    public partial class RetsuConsumer : IConsumer, IGateway
 	{
 		public Func<DiscordChannelPacket, Task> OnChannelCreate { get; set; }
 		public Func<DiscordChannelPacket, Task> OnChannelUpdate { get; set; }
@@ -49,7 +50,8 @@
 
         private readonly IModel channel;
 
-        private EventingBasicConsumer consumer;
+        private readonly ConcurrentDictionary<string, EventingBasicConsumer> consumers
+            = new ConcurrentDictionary<string, EventingBasicConsumer>();
 
 		private readonly ConsumerConfiguration config;
 
@@ -87,9 +89,14 @@
 			channel.QueueBind(config.QueueName, config.ExchangeName, config.ExchangeRoutingKey, null);
 
 			var commandChannel = connectionFactory.CreateConnection().CreateModel();
-			commandChannel.ExchangeDeclare(config.QueueName + "-command", ExchangeType.Fanout, true);
-			commandChannel.QueueDeclare(config.QueueName + "-command", false, false, false);
-			commandChannel.QueueBind(config.QueueName + "-command", config.QueueName + "-command", config.ExchangeRoutingKey, null);
+			commandChannel.ExchangeDeclare(
+                config.QueueName + "-command", ExchangeType.Fanout, true);
+			commandChannel.QueueDeclare(
+                config.QueueName + "-command", false, false, false);
+			commandChannel.QueueBind(
+                config.QueueName + "-command", 
+                config.QueueName + "-command", 
+                config.ExchangeRoutingKey, null);
 		}
 
 		public async Task RestartAsync()
@@ -100,24 +107,25 @@
 
 		public Task StartAsync()
 		{
-			consumer = new EventingBasicConsumer(channel);
+			var consumer = new EventingBasicConsumer(channel);
 			consumer.Received += async (ch, ea) => await OnMessageAsync(ch, ea);
 
-			string consumerTag = channel.BasicConsume(config.QueueName, config.ConsumerAutoAck, consumer);
+			// TODO: remove once transition is complete.
+			string _ = channel.BasicConsume(
+                config.QueueName, config.ConsumerAutoAck, consumer);
+            consumers.TryAdd("", consumer);
+
 			return Task.CompletedTask;
 		}
 
 		public Task StopAsync()
 		{
-			consumer.Received -= async (ch, ea) => await OnMessageAsync(ch, ea);
-			consumer = null;
 			return Task.CompletedTask;
 		}
 
 		private async Task OnMessageAsync(object ch, BasicDeliverEventArgs ea)
 		{
 			var payload = Encoding.UTF8.GetString(ea.Body);
-			var sw = Stopwatch.StartNew();
 			var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
 			if(body.OpCode != GatewayOpcode.Dispatch)
 			{
@@ -392,12 +400,9 @@
 
 					case GatewayEventType.Ready:
 					{
-						if(OnReady != null)
-						{
-							OnReady(
+							OnReady.InvokeAsync(
 								(body.Data as JToken).ToObject<GatewayReadyPacket>()
 							).Wait();
-						}
 					}
 					break;
 
@@ -454,7 +459,6 @@
 					channel.BasicNack(ea.DeliveryTag, false, false);
 				}
 			}
-			Log.Debug($"{body.EventName}: {sw.ElapsedMilliseconds}ms");
 		}
 
 		public Task SendAsync(int shardId, GatewayOpcode opcode, object payload)
@@ -469,5 +473,30 @@
             channel.BasicPublish("gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
 			return Task.CompletedTask;
 		}
-	}
+
+        /// <inheritdoc />
+        public ValueTask SubscribeAsync(string ev)
+        {
+            var key = config.QueueName + ":" + ev;
+            if(consumers.ContainsKey(key))
+            {
+                throw new InvalidOperationException("Queue already subscribed");
+            }
+
+			var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += async (ch, ea) => await OnMessageAsync(ch, ea);
+
+			string _ = channel.BasicConsume(
+                key, config.ConsumerAutoAck, consumer);
+            consumers.TryAdd("", consumer);
+
+			return default;
+        }
+
+        /// <inheritdoc />
+        public ValueTask UnsubscribeAsync(string ev)
+        {
+			return default;
+        }
+    }
 }
