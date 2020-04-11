@@ -3,13 +3,9 @@
 	using Miki.Discord.Common;
 	using Miki.Discord.Common.Events;
 	using Miki.Discord.Common.Gateway;
-	using Miki.Discord.Common.Gateway.Packets;
 	using Miki.Discord.Common.Packets;
 	using Miki.Discord.Common.Packets.Events;
-	using Miki.Discord.Rest;
 	using Miki.Logging;
-	using Newtonsoft.Json;
-	using Newtonsoft.Json.Linq;
 	using RabbitMQ.Client;
 	using RabbitMQ.Client.Events;
 	using System;
@@ -18,35 +14,37 @@
 	using System.Threading.Tasks;
     using Miki.Discord.Common.Extensions;
     using Miki.Discord.Common.Packets.API;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using Retsu.Models.Communication;
 
     public partial class RetsuConsumer : IConsumer, IGateway
 	{
-		public Func<DiscordChannelPacket, Task> OnChannelCreate { get; set; }
-		public Func<DiscordChannelPacket, Task> OnChannelUpdate { get; set; }
-		public Func<DiscordChannelPacket, Task> OnChannelDelete { get; set; }
-		public Func<DiscordGuildPacket, Task> OnGuildCreate { get; set; }
-		public Func<DiscordGuildPacket, Task> OnGuildUpdate { get; set; }
-		public Func<DiscordGuildUnavailablePacket, Task> OnGuildDelete { get; set; }
-		public Func<DiscordGuildMemberPacket, Task> OnGuildMemberAdd { get; set; }
-		public Func<ulong, DiscordUserPacket, Task> OnGuildMemberRemove { get; set; }
-		public Func<GuildMemberUpdateEventArgs, Task> OnGuildMemberUpdate { get; set; }
-		public Func<ulong, DiscordUserPacket, Task> OnGuildBanAdd { get; set; }
-		public Func<ulong, DiscordUserPacket, Task> OnGuildBanRemove { get; set; }
-		public Func<ulong, DiscordEmoji[], Task> OnGuildEmojiUpdate { get; set; }
-		public Func<ulong, DiscordRolePacket, Task> OnGuildRoleCreate { get; set; }
-		public Func<ulong, DiscordRolePacket, Task> OnGuildRoleUpdate { get; set; }
-		public Func<ulong, ulong, Task> OnGuildRoleDelete { get; set; }
-		public Func<DiscordMessagePacket, Task> OnMessageCreate { get; set; }
-		public Func<DiscordMessagePacket, Task> OnMessageUpdate { get; set; }
-		public Func<MessageDeleteArgs, Task> OnMessageDelete { get; set; }
-		public Func<MessageBulkDeleteEventArgs, Task> OnMessageDeleteBulk { get; set; }
-		public Func<DiscordPresencePacket, Task> OnPresenceUpdate { get; set; }
-		public Func<GatewayReadyPacket, Task> OnReady { get; set; }
-		public Func<TypingStartEventArgs, Task> OnTypingStart { get; set; }
-		public Func<DiscordPresencePacket, Task> OnUserUpdate { get; set; }
-        public event Func<GatewayMessage, Task> OnPacketSent;
-        public event Func<GatewayMessage, Task> OnPacketReceived;
+		public Func<DiscordChannelPacket, System.Threading.Tasks.Task> OnChannelCreate { get; set; }
+		public Func<DiscordChannelPacket, System.Threading.Tasks.Task> OnChannelUpdate { get; set; }
+		public Func<DiscordChannelPacket, System.Threading.Tasks.Task> OnChannelDelete { get; set; }
+		public Func<DiscordGuildPacket, System.Threading.Tasks.Task> OnGuildCreate { get; set; }
+		public Func<DiscordGuildPacket, System.Threading.Tasks.Task> OnGuildUpdate { get; set; }
+		public Func<DiscordGuildUnavailablePacket, System.Threading.Tasks.Task> OnGuildDelete { get; set; }
+		public Func<DiscordGuildMemberPacket, System.Threading.Tasks.Task> OnGuildMemberAdd { get; set; }
+		public Func<ulong, DiscordUserPacket, System.Threading.Tasks.Task> OnGuildMemberRemove { get; set; }
+		public Func<GuildMemberUpdateEventArgs, System.Threading.Tasks.Task> OnGuildMemberUpdate { get; set; }
+		public Func<ulong, DiscordUserPacket, System.Threading.Tasks.Task> OnGuildBanAdd { get; set; }
+		public Func<ulong, DiscordUserPacket, System.Threading.Tasks.Task> OnGuildBanRemove { get; set; }
+		public Func<ulong, DiscordEmoji[], System.Threading.Tasks.Task> OnGuildEmojiUpdate { get; set; }
+		public Func<ulong, DiscordRolePacket, System.Threading.Tasks.Task> OnGuildRoleCreate { get; set; }
+		public Func<ulong, DiscordRolePacket, System.Threading.Tasks.Task> OnGuildRoleUpdate { get; set; }
+		public Func<ulong, ulong, System.Threading.Tasks.Task> OnGuildRoleDelete { get; set; }
+		public Func<DiscordMessagePacket, System.Threading.Tasks.Task> OnMessageCreate { get; set; }
+		public Func<DiscordMessagePacket, System.Threading.Tasks.Task> OnMessageUpdate { get; set; }
+		public Func<MessageDeleteArgs, System.Threading.Tasks.Task> OnMessageDelete { get; set; }
+		public Func<MessageBulkDeleteEventArgs, System.Threading.Tasks.Task> OnMessageDeleteBulk { get; set; }
+		public Func<DiscordPresencePacket, System.Threading.Tasks.Task> OnPresenceUpdate { get; set; }
+		public Func<Miki.Discord.Common.Gateway.Packets.GatewayReadyPacket, System.Threading.Tasks.Task> OnReady { get; set; }
+		public Func<TypingStartEventArgs, System.Threading.Tasks.Task> OnTypingStart { get; set; }
+		public Func<DiscordPresencePacket, System.Threading.Tasks.Task> OnUserUpdate { get; set; }
+        public event Func<GatewayMessage, System.Threading.Tasks.Task> OnPacketSent;
+        public event Func<GatewayMessage, System.Threading.Tasks.Task> OnPacketReceived;
 
         private readonly IModel channel;
 
@@ -99,13 +97,13 @@
                 config.ExchangeRoutingKey, null);
 		}
 
-		public async Task RestartAsync()
+		public async System.Threading.Tasks.Task RestartAsync()
 		{
 			await StopAsync();
 			await StartAsync();
 		}
 
-		public Task StartAsync()
+		public System.Threading.Tasks.Task StartAsync()
 		{
 			var consumer = new EventingBasicConsumer(channel);
 			consumer.Received += async (ch, ea) => await OnMessageAsync(ch, ea);
@@ -115,18 +113,19 @@
                 config.QueueName, config.ConsumerAutoAck, consumer);
             consumers.TryAdd("", consumer);
 
-			return Task.CompletedTask;
+			return System.Threading.Tasks.Task.CompletedTask;
 		}
 
-		public Task StopAsync()
+		public System.Threading.Tasks.Task StopAsync()
 		{
-			return Task.CompletedTask;
+			return System.Threading.Tasks.Task.CompletedTask;
 		}
 
-		private async Task OnMessageAsync(object ch, BasicDeliverEventArgs ea)
+		private async System.Threading.Tasks.Task OnMessageAsync(object ch, BasicDeliverEventArgs ea)
 		{
 			var payload = Encoding.UTF8.GetString(ea.Body);
 			var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
+
 			if(body.OpCode != GatewayOpcode.Dispatch)
 			{
 				channel.BasicAck(ea.DeliveryTag, false);
@@ -137,20 +136,19 @@
 			try
 			{
 				Log.Trace("packet with the op-code '" + body.EventName + "' received.");
-				switch(Enum.Parse(typeof(GatewayEventType), body.EventName.Replace("_", ""), true))
+				switch(Enum.Parse(typeof(Miki.Discord.Rest.GatewayEventType), body.EventName.Replace("_", ""), true))
 				{
-					case GatewayEventType.MessageCreate:
+					case Miki.Discord.Rest.GatewayEventType.MessageCreate:
 					{
 						if(OnMessageCreate != null)
 						{
 							await OnMessageCreate(
-								(body.Data as JToken).ToObject<DiscordMessagePacket>()
-							);
+                                (body.Data as JToken).ToObject<DiscordMessagePacket>());
 						}
 					}
 					break;
 
-					case GatewayEventType.GuildCreate:
+					case Miki.Discord.Rest.GatewayEventType.GuildCreate:
 					{
 						if(OnGuildCreate != null)
 						{
@@ -163,24 +161,22 @@
 					}
 					break;
 
-					case GatewayEventType.ChannelCreate:
+					case Miki.Discord.Rest.GatewayEventType.ChannelCreate:
 					{
 						if(OnGuildCreate != null)
 						{
-							var channel = (body.Data as JToken).ToObject<DiscordChannelPacket>();
+							var discordChannel = (body.Data as JToken).ToObject<DiscordChannelPacket>();
 
-							await OnChannelCreate(
-								channel
-							);
+							await OnChannelCreate(discordChannel);
 						}
 					}
 					break;
 
-					case GatewayEventType.GuildMemberRemove:
+					case Miki.Discord.Rest.GatewayEventType.GuildMemberRemove:
 					{
 						if(OnGuildMemberRemove != null)
-						{
-							var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
+                        {
+                            var packet = (body.Data as JToken).ToObject<GuildIdUserArgs>();
 
 							await OnGuildMemberRemove(
 								packet.guildId,
@@ -190,9 +186,10 @@
 					}
 					break;
 
-					case GatewayEventType.GuildMemberAdd:
+					case Miki.Discord.Rest.GatewayEventType.GuildMemberAdd:
 					{
-						DiscordGuildMemberPacket guildMember = (body.Data as JToken).ToObject<DiscordGuildMemberPacket>();
+						DiscordGuildMemberPacket guildMember 
+                            = (body.Data as JToken).ToObject<DiscordGuildMemberPacket>();
 
 						if(OnGuildMemberAdd != null)
 						{
@@ -201,9 +198,10 @@
 					}
 					break;
 
-					case GatewayEventType.GuildMemberUpdate:
+					case Miki.Discord.Rest.GatewayEventType.GuildMemberUpdate:
 					{
-						GuildMemberUpdateEventArgs guildMember = (body.Data as JToken).ToObject<GuildMemberUpdateEventArgs>();
+						GuildMemberUpdateEventArgs guildMember =
+                            (body.Data as JToken).ToObject<GuildMemberUpdateEventArgs>();
 
 						if(OnGuildMemberUpdate != null)
 						{
@@ -214,7 +212,7 @@
 					}
 					break;
 
-					case GatewayEventType.GuildRoleCreate:
+					case Miki.Discord.Rest.GatewayEventType.GuildRoleCreate:
 					{
 						RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
 
@@ -228,11 +226,12 @@
 					}
 					break;
 
-					case GatewayEventType.GuildRoleDelete:
+					case Miki.Discord.Rest.GatewayEventType.GuildRoleDelete:
 					{
 						if(OnGuildRoleDelete != null)
 						{
-							RoleDeleteEventArgs role = (body.Data as JToken).ToObject<RoleDeleteEventArgs>();
+							RoleDeleteEventArgs role = (body.Data as JToken)
+                                .ToObject<RoleDeleteEventArgs>();
 
 							await OnGuildRoleDelete(
 								role.GuildId,
@@ -242,7 +241,7 @@
 					}
 					break;
 
-					case GatewayEventType.GuildRoleUpdate:
+					case Miki.Discord.Rest.GatewayEventType.GuildRoleUpdate:
 					{
 						RoleEventArgs role = (body.Data as JToken).ToObject<RoleEventArgs>();
 
@@ -256,29 +255,27 @@
 					}
 					break;
 
-					case GatewayEventType.ChannelDelete:
+					case Miki.Discord.Rest.GatewayEventType.ChannelDelete:
 					{
 						if(OnChannelDelete != null)
 						{
 							await OnChannelDelete(
-								(body.Data as JToken).ToObject<DiscordChannelPacket>()
-							);
+                                (body.Data as JToken).ToObject<DiscordChannelPacket>());
 						}
 					}
 					break;
 
-					case GatewayEventType.ChannelUpdate:
+					case Miki.Discord.Rest.GatewayEventType.ChannelUpdate:
 					{
 						if(OnChannelUpdate != null)
 						{
 							await OnChannelUpdate(
-								(body.Data as JToken).ToObject<DiscordChannelPacket>()
-							);
+                                (body.Data as JToken).ToObject<DiscordChannelPacket>());
 						}
 					}
 					break;
 
-					case GatewayEventType.GuildBanAdd:
+					case Miki.Discord.Rest.GatewayEventType.GuildBanAdd:
 					{
 						if(OnGuildBanAdd != null)
 						{
@@ -292,7 +289,7 @@
 					}
 					break;
 
-					case GatewayEventType.GuildBanRemove:
+					case Miki.Discord.Rest.GatewayEventType.GuildBanRemove:
 					{
 						if(OnGuildBanRemove != null)
 						{
@@ -306,11 +303,12 @@
 					}
 					break;
 
-					case GatewayEventType.GuildDelete:
+					case Miki.Discord.Rest.GatewayEventType.GuildDelete:
 					{
 						if(OnGuildDelete != null)
 						{
-							var packet = (body.Data as JToken).ToObject<DiscordGuildUnavailablePacket>();
+							var packet = (body.Data as JToken)
+                                .ToObject<DiscordGuildUnavailablePacket>();
 
 							await OnGuildDelete(
 								packet
@@ -319,11 +317,11 @@
 					}
 					break;
 
-					case GatewayEventType.GuildEmojisUpdate:
+					case Miki.Discord.Rest.GatewayEventType.GuildEmojisUpdate:
 					{
 						if(OnGuildEmojiUpdate != null)
-						{
-							var packet = (body.Data as JToken).ToObject<GuildEmojisUpdateEventArgs>();
+                        {
+                            var packet = (body.Data as JToken).ToObject<GuildEmojisUpdateEventArgs>();
 
 							await OnGuildEmojiUpdate(
 								packet.guildId,
@@ -333,113 +331,107 @@
 					}
 					break;
 
-					case GatewayEventType.GuildIntegrationsUpdate:
+					case Miki.Discord.Rest.GatewayEventType.GuildIntegrationsUpdate:
 					{
 					}
 					break;
 
-					case GatewayEventType.GuildMembersChunk:
+					case Miki.Discord.Rest.GatewayEventType.GuildMembersChunk:
 					{
 					}
 					break;
 
-					case GatewayEventType.GuildUpdate:
+					case Miki.Discord.Rest.GatewayEventType.GuildUpdate:
 					{
-						if(OnGuildUpdate != null)
-						{
-							await OnGuildUpdate(
-								(body.Data as JToken).ToObject<DiscordGuildPacket>()
-							);
-						}
-					}
+                        if(OnGuildUpdate != null)
+                        {
+                            await OnGuildUpdate(
+                                (body.Data as JToken).ToObject<DiscordGuildPacket>());
+                        }
+                    }
 					break;
 
-					case GatewayEventType.MessageDelete:
+					case Miki.Discord.Rest.GatewayEventType.MessageDelete:
 					{
 						if(OnMessageDelete != null)
-						{
-							await OnMessageDelete(
-								(body.Data as JToken).ToObject<MessageDeleteArgs>()
-							);
-						}
+                        {
+                            await OnMessageDelete(
+                                (body.Data as JToken).ToObject<MessageDeleteArgs>());
+                        }
 					}
 					break;
 
-					case GatewayEventType.MessageDeleteBulk:
+					case Miki.Discord.Rest.GatewayEventType.MessageDeleteBulk:
 					{
 						if(OnMessageDeleteBulk != null)
-						{
-							await OnMessageDeleteBulk(
-								(body.Data as JToken).ToObject<MessageBulkDeleteEventArgs>()
-							);
-						}
+                        {
+                            await OnMessageDeleteBulk(
+                                (body.Data as JToken).ToObject<MessageBulkDeleteEventArgs>());
+                        }
 					}
 					break;
 
-					case GatewayEventType.MessageUpdate:
+					case Miki.Discord.Rest.GatewayEventType.MessageUpdate:
 					{
 						if(OnMessageUpdate != null)
-						{
-							await OnMessageUpdate(
-							(body.Data as JToken).ToObject<DiscordMessagePacket>()
-							);
-						}
+                        {
+                            await OnMessageUpdate(
+                                (body.Data as JToken).ToObject<DiscordMessagePacket>());
+                        }
 					}
 					break;
 
-					case GatewayEventType.PresenceUpdate:
+					case Miki.Discord.Rest.GatewayEventType.PresenceUpdate:
 					{
 						if(OnPresenceUpdate != null)
-						{
-							await OnPresenceUpdate(
-								(body.Data as JToken).ToObject<DiscordPresencePacket>()
-							);
-						}
+                        {
+                            await OnPresenceUpdate(
+                                (body.Data as JToken).ToObject<DiscordPresencePacket>());
+                        }
 					}
 					break;
 
-					case GatewayEventType.Ready:
+					case Miki.Discord.Rest.GatewayEventType.Ready:
 					{
 							OnReady.InvokeAsync(
-								(body.Data as JToken).ToObject<GatewayReadyPacket>()
+								(body.Data as Newtonsoft.Json.Linq.JToken).ToObject<Miki.Discord.Common.Gateway.Packets.GatewayReadyPacket>()
 							).Wait();
 					}
+
 					break;
 
-					case GatewayEventType.Resumed:
+					case Miki.Discord.Rest.GatewayEventType.Resumed:
 					{
 
 					}
 					break;
 
-					case GatewayEventType.TypingStart:
+					case Miki.Discord.Rest.GatewayEventType.TypingStart:
 					{
 						if(OnTypingStart != null)
-						{
-							await OnTypingStart(
-								(body.Data as JToken).ToObject<TypingStartEventArgs>()
-							);
-						}
+                        {
+                            await OnTypingStart(
+                                (body.Data as JToken).ToObject<TypingStartEventArgs>());
+                        }
 					}
 					break;
 
-					case GatewayEventType.UserUpdate:
+					case Miki.Discord.Rest.GatewayEventType.UserUpdate:
 					{
 						if(OnUserUpdate != null)
-						{
-							await OnUserUpdate(
-								(body.Data as JToken).ToObject<DiscordPresencePacket>()
-							);
-						}
+                        {
+                            await OnUserUpdate(
+                                (body.Data as JToken).ToObject<DiscordPresencePacket>());
+                        }
 					}
 					break;
 
-					case GatewayEventType.VoiceServerUpdate:
+					case Miki.Discord.Rest.GatewayEventType.VoiceServerUpdate:
 					{
 					}
 					break;
 
-					case GatewayEventType.VoiceStateUpdate:
+					case Miki.Discord.Rest.GatewayEventType.VoiceStateUpdate:
 					{
 					}
 					break;
@@ -461,7 +453,7 @@
 			}
 		}
 
-		public Task SendAsync(int shardId, GatewayOpcode opcode, object payload)
+		public System.Threading.Tasks.Task SendAsync(int shardId, GatewayOpcode opcode, object payload)
 		{
             CommandMessage msg = new CommandMessage
             {
@@ -470,12 +462,13 @@
                 Data = payload
             };
 
-            channel.BasicPublish("gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
-			return Task.CompletedTask;
+            channel.BasicPublish(
+                "gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
+			return System.Threading.Tasks.Task.CompletedTask;
 		}
 
         /// <inheritdoc />
-        public ValueTask SubscribeAsync(string ev)
+        public System.Threading.Tasks.ValueTask SubscribeAsync(string ev)
         {
             var key = config.QueueName + ":" + ev;
             if(consumers.ContainsKey(key))
@@ -494,7 +487,7 @@
         }
 
         /// <inheritdoc />
-        public ValueTask UnsubscribeAsync(string ev)
+        public System.Threading.Tasks.ValueTask UnsubscribeAsync(string ev)
         {
 			return default;
         }
