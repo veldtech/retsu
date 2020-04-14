@@ -16,12 +16,14 @@ steps:
     publishWebProjects: false
     projects: 'src/Retsu.Publisher/Retsu.Publisher.csproj'
     arguments: '-o $(Build.ArtifactStagingDirectory)'
+
 - task: DotNetCoreCLI@2
   inputs:
     command: 'test'
     projects: 'test/**/*.csproj'
-- task: PublishBuildArtifacts@1
+
+- task: PublishPipelineArtifact@1
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+    artifact: 'drop'
+    publishLocation: 'pipeline'
