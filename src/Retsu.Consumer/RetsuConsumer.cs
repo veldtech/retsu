@@ -20,14 +20,14 @@
 
     public partial class RetsuConsumer : IConsumer, IGateway
 	{
-		public Func<DiscordChannelPacket, System.Threading.Tasks.Task> OnChannelCreate { get; set; }
-		public Func<DiscordChannelPacket, System.Threading.Tasks.Task> OnChannelUpdate { get; set; }
-		public Func<DiscordChannelPacket, System.Threading.Tasks.Task> OnChannelDelete { get; set; }
-		public Func<DiscordGuildPacket, System.Threading.Tasks.Task> OnGuildCreate { get; set; }
+		public Func<DiscordChannelPacket, Task> OnChannelCreate { get; set; }
+		public Func<DiscordChannelPacket, Task> OnChannelUpdate { get; set; }
+		public Func<DiscordChannelPacket, Task> OnChannelDelete { get; set; }
+		public Func<DiscordGuildPacket, Task> OnGuildCreate { get; set; }
 		public Func<DiscordGuildPacket, System.Threading.Tasks.Task> OnGuildUpdate { get; set; }
 		public Func<DiscordGuildUnavailablePacket, System.Threading.Tasks.Task> OnGuildDelete { get; set; }
 		public Func<DiscordGuildMemberPacket, System.Threading.Tasks.Task> OnGuildMemberAdd { get; set; }
-		public Func<ulong, DiscordUserPacket, System.Threading.Tasks.Task> OnGuildMemberRemove { get; set; }
+		public Func<ulong, DiscordUserPacket, Task> OnGuildMemberRemove { get; set; }
 		public Func<GuildMemberUpdateEventArgs, System.Threading.Tasks.Task> OnGuildMemberUpdate { get; set; }
 		public Func<ulong, DiscordUserPacket, System.Threading.Tasks.Task> OnGuildBanAdd { get; set; }
 		public Func<ulong, DiscordUserPacket, System.Threading.Tasks.Task> OnGuildBanRemove { get; set; }
@@ -116,7 +116,7 @@
 			return System.Threading.Tasks.Task.CompletedTask;
 		}
 
-		public System.Threading.Tasks.Task StopAsync()
+		public Task StopAsync()
 		{
 			return System.Threading.Tasks.Task.CompletedTask;
 		}
