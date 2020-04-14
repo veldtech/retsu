@@ -70,6 +70,7 @@
                 };
 
                 var intents = GatewayIntents.AllDefault
+                              | GatewayIntents.GuildMembers
                               & ~GatewayIntents.DirectMessageReactions
                               & ~GatewayIntents.DirectMessageTyping
                               & ~GatewayIntents.GuildVoiceStates
