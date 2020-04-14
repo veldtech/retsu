@@ -24,22 +24,22 @@
 		public Func<DiscordChannelPacket, Task> OnChannelUpdate { get; set; }
 		public Func<DiscordChannelPacket, Task> OnChannelDelete { get; set; }
 		public Func<DiscordGuildPacket, Task> OnGuildCreate { get; set; }
-		public Func<DiscordGuildPacket, System.Threading.Tasks.Task> OnGuildUpdate { get; set; }
-		public Func<DiscordGuildUnavailablePacket, System.Threading.Tasks.Task> OnGuildDelete { get; set; }
-		public Func<DiscordGuildMemberPacket, System.Threading.Tasks.Task> OnGuildMemberAdd { get; set; }
+		public Func<DiscordGuildPacket, Task> OnGuildUpdate { get; set; }
+		public Func<DiscordGuildUnavailablePacket, Task> OnGuildDelete { get; set; }
+		public Func<DiscordGuildMemberPacket, Task> OnGuildMemberAdd { get; set; }
 		public Func<ulong, DiscordUserPacket, Task> OnGuildMemberRemove { get; set; }
-		public Func<GuildMemberUpdateEventArgs, System.Threading.Tasks.Task> OnGuildMemberUpdate { get; set; }
-		public Func<ulong, DiscordUserPacket, System.Threading.Tasks.Task> OnGuildBanAdd { get; set; }
-		public Func<ulong, DiscordUserPacket, System.Threading.Tasks.Task> OnGuildBanRemove { get; set; }
-		public Func<ulong, DiscordEmoji[], System.Threading.Tasks.Task> OnGuildEmojiUpdate { get; set; }
-		public Func<ulong, DiscordRolePacket, System.Threading.Tasks.Task> OnGuildRoleCreate { get; set; }
-		public Func<ulong, DiscordRolePacket, System.Threading.Tasks.Task> OnGuildRoleUpdate { get; set; }
-		public Func<ulong, ulong, System.Threading.Tasks.Task> OnGuildRoleDelete { get; set; }
-		public Func<DiscordMessagePacket, System.Threading.Tasks.Task> OnMessageCreate { get; set; }
-		public Func<DiscordMessagePacket, System.Threading.Tasks.Task> OnMessageUpdate { get; set; }
-		public Func<MessageDeleteArgs, System.Threading.Tasks.Task> OnMessageDelete { get; set; }
-		public Func<MessageBulkDeleteEventArgs, System.Threading.Tasks.Task> OnMessageDeleteBulk { get; set; }
-		public Func<DiscordPresencePacket, System.Threading.Tasks.Task> OnPresenceUpdate { get; set; }
+		public Func<GuildMemberUpdateEventArgs, Task> OnGuildMemberUpdate { get; set; }
+		public Func<ulong, DiscordUserPacket, Task> OnGuildBanAdd { get; set; }
+		public Func<ulong, DiscordUserPacket, Task> OnGuildBanRemove { get; set; }
+		public Func<ulong, DiscordEmoji[], Task> OnGuildEmojiUpdate { get; set; }
+		public Func<ulong, DiscordRolePacket, Task> OnGuildRoleCreate { get; set; }
+		public Func<ulong, DiscordRolePacket, Task> OnGuildRoleUpdate { get; set; }
+		public Func<ulong, ulong, Task> OnGuildRoleDelete { get; set; }
+		public Func<DiscordMessagePacket, Task> OnMessageCreate { get; set; }
+		public Func<DiscordMessagePacket, Task> OnMessageUpdate { get; set; }
+		public Func<MessageDeleteArgs, Task> OnMessageDelete { get; set; }
+		public Func<MessageBulkDeleteEventArgs, Task> OnMessageDeleteBulk { get; set; }
+		public Func<DiscordPresencePacket, Task> OnPresenceUpdate { get; set; }
 		public Func<GatewayReadyPacket, Task> OnReady { get; set; }
 		public Func<TypingStartEventArgs, Task> OnTypingStart { get; set; }
 		public Func<DiscordPresencePacket, Task> OnUserUpdate { get; set; }
@@ -97,13 +97,13 @@
                 config.ExchangeRoutingKey, null);
 		}
 
-		public async System.Threading.Tasks.Task RestartAsync()
+		public async Task RestartAsync()
 		{
 			await StopAsync();
 			await StartAsync();
 		}
 
-		public System.Threading.Tasks.Task StartAsync()
+		public Task StartAsync()
 		{
 			var consumer = new EventingBasicConsumer(channel);
 			consumer.Received += async (ch, ea) => await OnMessageAsync(ch, ea);
@@ -113,15 +113,15 @@
                 config.QueueName, config.ConsumerAutoAck, consumer);
             consumers.TryAdd("", consumer);
 
-			return System.Threading.Tasks.Task.CompletedTask;
+			return Task.CompletedTask;
 		}
 
 		public Task StopAsync()
 		{
-			return System.Threading.Tasks.Task.CompletedTask;
+			return Task.CompletedTask;
 		}
 
-		private async System.Threading.Tasks.Task OnMessageAsync(object ch, BasicDeliverEventArgs ea)
+		private async Task OnMessageAsync(object ch, BasicDeliverEventArgs ea)
 		{
 			var payload = Encoding.UTF8.GetString(ea.Body);
 			var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
@@ -468,7 +468,7 @@
 		}
 
         /// <inheritdoc />
-        public System.Threading.Tasks.ValueTask SubscribeAsync(string ev)
+        public ValueTask SubscribeAsync(string ev)
         {
             var key = config.QueueName + ":" + ev;
             if(consumers.ContainsKey(key))
@@ -479,6 +479,9 @@
 			var consumer = new EventingBasicConsumer(channel);
             consumer.Received += async (ch, ea) => await OnMessageAsync(ch, ea);
 
+            channel.QueueDeclare(key, true, false, false);
+            channel.QueueBind(key, config.ExchangeName, ev);
+
 			string _ = channel.BasicConsume(
                 key, config.ConsumerAutoAck, consumer);
             consumers.TryAdd("", consumer);
@@ -487,7 +490,7 @@
         }
 
         /// <inheritdoc />
-        public System.Threading.Tasks.ValueTask UnsubscribeAsync(string ev)
+        public ValueTask UnsubscribeAsync(string ev)
         {
 			return default;
         }
