@@ -453,7 +453,7 @@
 			}
 		}
 
-		public System.Threading.Tasks.Task SendAsync(int shardId, GatewayOpcode opcode, object payload)
+		public Task SendAsync(int shardId, GatewayOpcode opcode, object payload)
 		{
             CommandMessage msg = new CommandMessage
             {
@@ -464,7 +464,7 @@
 
             channel.BasicPublish(
                 "gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
-			return System.Threading.Tasks.Task.CompletedTask;
+			return Task.CompletedTask;
 		}
 
         /// <inheritdoc />
