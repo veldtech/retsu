@@ -20,8 +20,8 @@
     using RabbitMQ.Client.Events;
     using RabbitMQ.Client.Exceptions;
     using Retsu.Models.Communication;
+    using Retsu.Publisher.Models;
     using Sentry;
-    using Sharder.App;
     using StackExchange.Redis;
 
     internal class Program
@@ -60,7 +60,7 @@
                 {
                     allShardIds.Add(i);
                 }
-
+                
                 options = new JsonSerializerOptions
                 {
                     Converters =
@@ -68,16 +68,6 @@
                         new StringToUlongConverter()
                     }
                 };
-
-                var intents = GatewayIntents.AllDefault
-                              | GatewayIntents.GuildMembers
-                              & ~GatewayIntents.DirectMessageReactions
-                              & ~GatewayIntents.DirectMessageTyping
-                              & ~GatewayIntents.GuildVoiceStates
-                              & ~GatewayIntents.GuildWebhooks
-                              & ~GatewayIntents.GuildMessageTyping
-                              & ~GatewayIntents.GuildIntegrations
-                              & ~GatewayIntents.GuildInvites;
 
                 cluster = new GatewayConnectionCluster(new GatewayProperties
                 {
@@ -90,7 +80,7 @@
                     Version = GatewayConstants.DefaultVersion,
                     AllowNonDispatchEvents = false,
                     Compressed = false,
-                    Intents = intents
+                    Intents = config.Discord.Intents
                 }, allShardIds);
 
                 ConnectionFactory conn = new ConnectionFactory

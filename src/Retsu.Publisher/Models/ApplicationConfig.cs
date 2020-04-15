@@ -1,8 +1,9 @@
-﻿namespace Sharder.App
+﻿namespace Retsu.Publisher.Models
 {
-    using Miki.Logging;
     using System.Collections.Generic;
     using System.Text.Json.Serialization;
+    using Miki.Discord.Gateway;
+    using Miki.Logging;
 
     public class ApplicationConfig
     {
@@ -19,6 +20,9 @@
 
             [JsonPropertyName("shard_num")]
             public int ShardAmount { get; set; }
+
+            [JsonPropertyName("intents")]
+            public GatewayIntents Intents { get; set; }
         }
 
         public class MQConfig
