@@ -69,17 +69,7 @@
 			{
 				Log.Error(args.Exception);
 			};
-
-			connection.ConnectionRecoveryError += (s, args) =>
-			{
-				Log.Error(args.Exception);
-			};
-
-			connection.RecoverySucceeded += (s, args) =>
-			{
-				Log.Debug("Rabbit Connection Recovered!");
-			};
-
+			
 			channel = connection.CreateModel();
 			channel.BasicQos(config.PrefetchSize, config.PrefetchCount, false);
 			channel.ExchangeDeclare(config.ExchangeName, ExchangeType.Direct);
@@ -123,7 +113,7 @@
 
 		private async Task OnMessageAsync(object ch, BasicDeliverEventArgs ea)
 		{
-			var payload = Encoding.UTF8.GetString(ea.Body);
+			var payload = Encoding.UTF8.GetString(ea.Body.Span);
 			var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
 
 			if(body.OpCode != GatewayOpcode.Dispatch)
