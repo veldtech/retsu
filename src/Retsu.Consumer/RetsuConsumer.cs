@@ -6,19 +6,15 @@
 	using Miki.Discord.Common.Packets;
 	using Miki.Discord.Common.Packets.Events;
 	using Miki.Logging;
-	using RabbitMQ.Client;
-	using RabbitMQ.Client.Events;
 	using System;
-    using System.Collections.Concurrent;
-    using System.Text;
-	using System.Threading.Tasks;
+    using System.Threading.Tasks;
     using Miki.Discord.Common.Extensions;
     using Miki.Discord.Common.Packets.API;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Retsu.Models.Communication;
+    using Retsu.Consumer.Models;
 
-    public partial class RetsuConsumer : IConsumer, IGateway
+    public class RetsuConsumer : IGateway
 	{
 		public Func<DiscordChannelPacket, Task> OnChannelCreate { get; set; }
 		public Func<DiscordChannelPacket, Task> OnChannelUpdate { get; set; }
@@ -46,46 +42,19 @@
         public Func<GatewayMessage, Task> OnPacketSent { get; set; }
         public Func<GatewayMessage, Task> OnPacketReceived { get; set; }
 
-        private readonly IModel channel;
+        private readonly ConsumerConfiguration config;
 
-        private readonly ConcurrentDictionary<string, EventingBasicConsumer> consumers
-            = new ConcurrentDictionary<string, EventingBasicConsumer>();
+        private readonly ReactiveMQConsumer consumer;
+        private readonly ReactiveMQPublisher publisher;
 
-		private readonly ConsumerConfiguration config;
-
-		public RetsuConsumer(ConsumerConfiguration config)
-		{
+		public RetsuConsumer(
+            ConsumerConfiguration config,
+            QueueConfiguration publisherConfig)
+        {
             this.config = config;
-
-            ConnectionFactory connectionFactory = new ConnectionFactory
-            {
-                Uri = config.ConnectionString,
-                DispatchConsumersAsync = false
-            };
-
-            var connection = connectionFactory.CreateConnection();
-
-			connection.CallbackException += (s, args) =>
-			{
-				Log.Error(args.Exception);
-			};
-			
-			channel = connection.CreateModel();
-			channel.BasicQos(config.PrefetchSize, config.PrefetchCount, false);
-			channel.ExchangeDeclare(config.ExchangeName, ExchangeType.Direct);
-			channel.QueueDeclare(config.QueueName, config.QueueDurable, config.QueueExclusive, config.QueueAutoDelete, null);
-			channel.QueueBind(config.QueueName, config.ExchangeName, config.ExchangeRoutingKey, null);
-
-			var commandChannel = connectionFactory.CreateConnection().CreateModel();
-			commandChannel.ExchangeDeclare(
-                config.QueueName + "-command", ExchangeType.Fanout, true);
-			commandChannel.QueueDeclare(
-                config.QueueName + "-command", false, false, false);
-			commandChannel.QueueBind(
-                config.QueueName + "-command", 
-                config.QueueName + "-command", 
-                config.ExchangeRoutingKey, null);
-		}
+            consumer = new ReactiveMQConsumer(config);
+            publisher = new ReactiveMQPublisher(publisherConfig);
+        }
 
 		public async Task RestartAsync()
 		{
@@ -103,28 +72,27 @@
 			return Task.CompletedTask;
 		}
 
-        private async Task OnMessageAsync(object ch, BasicDeliverEventArgs ea)
+        private async Task OnMessageAsync(IMQMessage<GatewayMessage> message)
         {
-            var payload = Encoding.UTF8.GetString(ea.Body.Span);
-            var body = JsonConvert.DeserializeObject<GatewayMessage>(payload);
-            if(body.OpCode != GatewayOpcode.Dispatch)
+            if(message.Body.OpCode != GatewayOpcode.Dispatch)
             {
-                channel.BasicAck(ea.DeliveryTag, false);
-                Log.Trace("packet from gateway with op '" + body.OpCode + "' received");
+                message.Ack();
+                Log.Trace("packet from gateway with op '" + message.Body.OpCode + "' received");
                 return;
             }
 
-            if(!(body.Data is JToken token))
+            if(!(message.Body.Data is JToken token))
             {
-                channel.BasicAck(ea.DeliveryTag, false);
+                message.Ack();
                 Log.Trace("Invalid data payload.");
                 return;
             }
 
             try
             {
-                Log.Trace("packet with the op-code '" + body.EventName + "' received.");
-                switch(Enum.Parse(typeof(GatewayEventType), body.EventName.Replace("_", ""), true))
+                Log.Trace("packet with the op-code '" + message.Body.EventName + "' received.");
+                switch(Enum.Parse(
+                    typeof(GatewayEventType), message.Body.EventName.Replace("_", ""), true))
                 {
                     case GatewayEventType.MessageCreate:
                     {
@@ -250,7 +218,10 @@
 
                     case GatewayEventType.MessageUpdate:
                     {
-                        await OnMessageUpdate.InvokeAsync(token.ToObject<DiscordMessagePacket>());
+                        if(OnMessageUpdate != null)
+                        {
+                            //await OnMessageUpdate.Invoke(token.ToObject<DiscordMessagePacket>());
+                        }
                         break;
                     }
 
@@ -281,60 +252,35 @@
 
                 if(!config.ConsumerAutoAck)
                 {
-                    channel.BasicAck(ea.DeliveryTag, false);
+                    message.Ack();
                 }
             }
             catch(Exception e)
             {
                 Log.Error(e);
-
                 if(!config.ConsumerAutoAck)
                 {
-                    channel.BasicNack(ea.DeliveryTag, false, false);
+                    message.Nack();
                 }
             }
         }
 
-        public Task SendAsync(int shardId, GatewayOpcode opcode, object payload)
-		{
-            CommandMessage msg = new CommandMessage
-            {
-                Opcode = opcode,
-                ShardId = shardId,
-                Data = payload
-            };
-
-            channel.BasicPublish(
-                "gateway-command", "", body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(msg)));
-			return Task.CompletedTask;
-		}
-
-        /// <inheritdoc />
-        public ValueTask SubscribeAsync(string ev)
+        public async Task SendAsync(int shardId, GatewayOpcode opcode, object payload)
         {
-            var key = config.QueueName + ":" + ev;
-            if(consumers.ContainsKey(key))
-            {
-                throw new InvalidOperationException("Queue already subscribed");
-            }
-
-			var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += async (ch, ea) => await OnMessageAsync(ch, ea);
-
-            channel.QueueDeclare(key, true, false, false);
-            channel.QueueBind(key, config.ExchangeName, ev);
-
-			string _ = channel.BasicConsume(
-                key, config.ConsumerAutoAck, consumer);
-            consumers.TryAdd("", consumer);
-
-			return default;
+            await publisher.PublishAsync(
+                new CommandMessage
+                {
+                    Opcode = opcode,
+                    ShardId = shardId,
+                    Data = payload
+                });
         }
 
         /// <inheritdoc />
-        public ValueTask UnsubscribeAsync(string ev)
+        public async ValueTask SubscribeAsync(string ev)
         {
-			return default;
+            consumer.CreateObservable<GatewayMessage>(ev)
+                .Subscribe(async x => await OnMessageAsync(x));
         }
     }
 }
