@@ -1,18 +1,18 @@
 ﻿namespace Retsu.Consumer
 {
-	using Miki.Discord.Common;
-	using Miki.Discord.Common.Events;
-	using Miki.Discord.Common.Gateway;
-	using Miki.Discord.Common.Packets;
-	using Miki.Discord.Common.Packets.Events;
-	using Miki.Logging;
-	using System;
+    using System;
     using System.Threading.Tasks;
+    using Miki.Discord.Common;
+    using Miki.Discord.Common.Events;
     using Miki.Discord.Common.Extensions;
+    using Miki.Discord.Common.Gateway;
+    using Miki.Discord.Common.Packets;
     using Miki.Discord.Common.Packets.API;
+    using Miki.Discord.Common.Packets.Events;
+    using Miki.Logging;
     using Newtonsoft.Json.Linq;
-    using Retsu.Models.Communication;
     using Retsu.Consumer.Models;
+    using Retsu.Models.Communication;
 
     public class RetsuConsumer : IGateway
 	{
@@ -220,7 +220,7 @@
                     {
                         if(OnMessageUpdate != null)
                         {
-                            //await OnMessageUpdate.Invoke(token.ToObject<DiscordMessagePacket>());
+                            await OnMessageUpdate.Invoke(token.ToObject<DiscordMessagePacket>());
                         }
                         break;
                     }
@@ -276,11 +276,11 @@
                 });
         }
 
-        /// <inheritdoc />
-        public async ValueTask SubscribeAsync(string ev)
+        public ValueTask SubscribeAsync(string ev)
         {
             consumer.CreateObservable<GatewayMessage>(ev)
                 .Subscribe(async x => await OnMessageAsync(x));
+            return default;
         }
     }
 }
