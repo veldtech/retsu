@@ -9,23 +9,44 @@
 
     internal class ReactiveMQPublisher
     {
-        private readonly IModel channel;
+        private IConnection connection;
+        private IModel channel;
+
         private readonly QueueConfiguration config;
+        private readonly ConnectionFactory connectionFactory;
 
         internal ReactiveMQPublisher(QueueConfiguration config)
         {
             this.config = config;
-            var connectionFactory = new ConnectionFactory
+            connectionFactory = new ConnectionFactory
             {
                 Uri = config.ConnectionString
             };
-            channel = connectionFactory.CreateConnection().CreateModel();
+        }
+
+        public Task StartAsync()
+        {
+            connection = connectionFactory.CreateConnection();
+            channel = connection.CreateModel();
             channel.ExchangeDeclare(
                 config.QueueName, ExchangeType.Fanout, true);
             channel.QueueDeclare(
                 config.QueueName, false, false, false);
             channel.QueueBind(
                 config.QueueName, config.QueueName, config.ExchangeRoutingKey, null);
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync()
+        {
+            channel.Close();
+            channel.Dispose();
+            channel = null;
+
+            connection.Close();
+            connection.Dispose();
+            connection = null;
+            return Task.CompletedTask;
         }
 
         internal ValueTask PublishAsync(CommandMessage payload)

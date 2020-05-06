@@ -12,8 +12,10 @@
 
     internal class ReactiveMQConsumer
     {
-        private readonly IModel channel;
+        private IModel channel;
+        private IConnection connection;
 
+        private readonly ConnectionFactory connectionFactory;
         private readonly ConcurrentDictionary<string, EventingBasicConsumer> consumers
             = new ConcurrentDictionary<string, EventingBasicConsumer>();
 
@@ -22,15 +24,16 @@
         internal ReactiveMQConsumer(ConsumerConfiguration config)
         {
             this.config = config;
-
-            ConnectionFactory connectionFactory = new ConnectionFactory
+            connectionFactory = new ConnectionFactory
             {
                 Uri = config.ConnectionString,
                 DispatchConsumersAsync = false
             };
+        }
 
-            var connection = connectionFactory.CreateConnection();
-
+        public Task StartAsync()
+        {
+            connection = connectionFactory.CreateConnection();
             connection.CallbackException += (s, args) =>
             {
                 Log.Error(args.Exception);
@@ -42,6 +45,19 @@
             channel.QueueDeclare(config.QueueName, config.QueueDurable, config.QueueExclusive,
                 config.QueueAutoDelete, null);
             channel.QueueBind(config.QueueName, config.ExchangeName, config.ExchangeRoutingKey, null);
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync()
+        {
+            channel.Close();
+            channel.Dispose();
+            channel = null;
+
+            connection.Close();
+            connection.Dispose();
+            connection = null;
+            return Task.CompletedTask;
         }
 
         /// <inheritdoc />

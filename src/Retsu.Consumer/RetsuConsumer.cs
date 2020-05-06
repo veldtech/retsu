@@ -1,6 +1,8 @@
 ﻿namespace Retsu.Consumer
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
     using Miki.Discord.Common;
     using Miki.Discord.Common.Events;
@@ -47,6 +49,11 @@
         private readonly ReactiveMQConsumer consumer;
         private readonly ReactiveMQPublisher publisher;
 
+        private HashSet<string> subscribedTopics = new HashSet<string>();
+        private List<IDisposable> activeTopics = new List<IDisposable>();
+
+        private bool isActive = false;
+
 		public RetsuConsumer(
             ConsumerConfiguration config,
             QueueConfiguration publisherConfig)
@@ -62,15 +69,30 @@
 			await StartAsync();
 		}
 
-		public Task StartAsync()
-		{
-			return Task.CompletedTask;
-		}
+		public async Task StartAsync()
+        {
+            await consumer.StartAsync();
+            await publisher.StartAsync();
+            isActive = true;
 
-		public Task StopAsync()
-		{
-			return Task.CompletedTask;
-		}
+            foreach(var ev in subscribedTopics)
+            {
+                await SubscribeAsync(ev);
+            }
+
+        }
+
+		public async Task StopAsync()
+        {
+            await consumer.StopAsync();
+            await publisher.StartAsync();
+            isActive = false;
+
+            foreach(var topic in activeTopics)
+            {
+                topic.Dispose();
+            }
+        }
 
         private async Task OnMessageAsync(IMQMessage<GatewayMessage> message)
         {
@@ -218,9 +240,9 @@
 
                     case GatewayEventType.MessageUpdate:
                     {
-                        if(OnMessageUpdate != null)
+                        if(OnMessageUpdate != null && !OnMessageUpdate.GetInvocationList().Any())
                         {
-                            await OnMessageUpdate.Invoke(token.ToObject<DiscordMessagePacket>());
+                            await OnMessageUpdate.InvokeAsync(token.ToObject<DiscordMessagePacket>());
                         }
                         break;
                     }
@@ -278,8 +300,18 @@
 
         public ValueTask SubscribeAsync(string ev)
         {
-            consumer.CreateObservable<GatewayMessage>(ev)
-                .Subscribe(async x => await OnMessageAsync(x));
+            if(isActive)
+            {
+                var activeTopic = consumer.CreateObservable<GatewayMessage>(ev)
+                    .Subscribe(async x => await OnMessageAsync(x));
+                activeTopics.Add(activeTopic);
+            }
+
+            if(!subscribedTopics.Contains(ev))
+            {
+                subscribedTopics.Add(ev);
+            }
+
             return default;
         }
     }
