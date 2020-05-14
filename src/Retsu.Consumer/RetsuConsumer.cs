@@ -1,21 +1,21 @@
-﻿namespace Retsu.Consumer
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
-    using Miki.Discord.Common;
-    using Miki.Discord.Common.Events;
-    using Miki.Discord.Common.Extensions;
-    using Miki.Discord.Common.Gateway;
-    using Miki.Discord.Common.Packets;
-    using Miki.Discord.Common.Packets.API;
-    using Miki.Discord.Common.Packets.Events;
-    using Miki.Logging;
-    using Newtonsoft.Json.Linq;
-    using Retsu.Consumer.Models;
-    using Retsu.Models.Communication;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Miki.Discord.Common;
+using Miki.Discord.Common.Events;
+using Miki.Discord.Common.Extensions;
+using Miki.Discord.Common.Gateway;
+using Miki.Discord.Common.Packets;
+using Miki.Discord.Common.Packets.API;
+using Miki.Discord.Common.Packets.Events;
+using Miki.Logging;
+using Newtonsoft.Json.Linq;
+using Retsu.Consumer.Models;
+using Retsu.Models.Communication;
 
+namespace Retsu.Consumer
+{
     public class RetsuConsumer : IGateway
 	{
 		public Func<DiscordChannelPacket, Task> OnChannelCreate { get; set; }

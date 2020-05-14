@@ -1,15 +1,15 @@
-﻿namespace Retsu.Consumer
-{
-    using System;
-    using System.Collections.Concurrent;
-    using System.Reactive.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using Miki.Logging;
-    using Newtonsoft.Json;
-    using RabbitMQ.Client;
-    using RabbitMQ.Client.Events;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Reactive.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Miki.Logging;
+using Newtonsoft.Json;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
+namespace Retsu.Consumer
+{
     internal class ReactiveMQConsumer
     {
         private IModel channel;

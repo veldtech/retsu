@@ -1,12 +1,12 @@
-﻿namespace Retsu.Consumer
-{
-    using System.Text;
-    using System.Threading.Tasks;
-    using Newtonsoft.Json;
-    using RabbitMQ.Client;
-    using Retsu.Consumer.Models;
-    using Retsu.Models.Communication;
+﻿using System.Text;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using RabbitMQ.Client;
+using Retsu.Consumer.Models;
+using Retsu.Models.Communication;
 
+namespace Retsu.Consumer
+{
     internal class ReactiveMQPublisher
     {
         private IConnection connection;

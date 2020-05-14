@@ -1,8 +1,8 @@
-﻿namespace Retsu.Consumer
-{
-    using System;
-	using Retsu.Consumer.Models;
+﻿using System;
+using Retsu.Consumer.Models;
 
+namespace Retsu.Consumer
+{
 	public class ConsumerConfiguration : QueueConfiguration
 	{
         /// <summary>
