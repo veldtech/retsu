@@ -49,8 +49,8 @@ namespace Retsu.Consumer
         private readonly ReactiveMQConsumer consumer;
         private readonly ReactiveMQPublisher publisher;
 
-        private HashSet<string> subscribedTopics = new HashSet<string>();
-        private List<IDisposable> activeTopics = new List<IDisposable>();
+        private readonly HashSet<string> subscribedTopics = new HashSet<string>();
+        private readonly List<IDisposable> activeTopics = new List<IDisposable>();
 
         private bool isActive = false;
 

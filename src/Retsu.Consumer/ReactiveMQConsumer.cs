@@ -99,7 +99,7 @@ namespace Retsu.Consumer
     internal class MQMessage<T> : IMQMessage<T>
     {
         private readonly BasicDeliverEventArgs args;
-        private IModel channel;
+        private readonly IModel channel;
 
         public MQMessage(IModel channel, BasicDeliverEventArgs args)
         {
