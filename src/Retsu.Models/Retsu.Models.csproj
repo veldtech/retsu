@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Miki.Discord.Common" Version="3.3.1" />
+    <PackageReference Include="Miki.Discord.Common" Version="4.0.0-rc.3" />
   </ItemGroup>
 
 </Project>
