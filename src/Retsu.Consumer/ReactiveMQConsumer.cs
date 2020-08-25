@@ -2,9 +2,11 @@
 using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Miki.Discord.Gateway.Converters;
 using Miki.Logging;
-using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -20,10 +22,15 @@ namespace Retsu.Consumer
             = new ConcurrentDictionary<string, EventingBasicConsumer>();
 
         private readonly ConsumerConfiguration config;
+        private readonly JsonSerializerOptions serializerOptions;
 
         internal ReactiveMQConsumer(ConsumerConfiguration config)
         {
             this.config = config;
+
+            serializerOptions = new JsonSerializerOptions();
+            serializerOptions.Converters.Add(new StringToUlongConverter());
+
             connectionFactory = new ConnectionFactory
             {
                 Uri = config.ConnectionString,
@@ -91,7 +98,7 @@ namespace Retsu.Consumer
             var observable = Observable.FromEventPattern<BasicDeliverEventArgs>(
                     x => consumer.Received += x,
                     x => consumer.Received -= x)
-                .Select(x => new MQMessage<T>(channel, x.EventArgs));
+                .Select(x => new MQMessage<T>(channel, x.EventArgs, serializerOptions));
             return observable;
         }
     }
@@ -101,13 +108,14 @@ namespace Retsu.Consumer
         private readonly BasicDeliverEventArgs args;
         private readonly IModel channel;
 
-        public MQMessage(IModel channel, BasicDeliverEventArgs args)
+        public MQMessage(
+            IModel channel, BasicDeliverEventArgs args, JsonSerializerOptions serializerOptions = null)
         {
             this.channel = channel;
             this.args = args;
 
-            Body = JsonConvert.DeserializeObject<T>(
-                Encoding.UTF8.GetString(args.Body.Span));
+            Body = JsonSerializer.Deserialize<T>(
+                Encoding.UTF8.GetString(args.Body.Span), serializerOptions);
         }
 
 

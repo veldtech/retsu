@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Subjects;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Miki.Discord.Common;
-using Miki.Discord.Common.Events;
 using Miki.Discord.Common.Gateway;
-using Miki.Discord.Common.Packets;
-using Miki.Discord.Common.Packets.API;
-using Miki.Discord.Common.Packets.Events;
 using Miki.Discord.Gateway;
 using Miki.Discord.Gateway.Converters;
 using Miki.Logging;
@@ -96,17 +90,9 @@ namespace Retsu.Consumer
                 return;
             }
 
-            if(!(message.Body.Data is JToken))
-            {
-                message.Ack();
-                Log.Trace("Invalid data payload.");
-                return;
-            }
-
             try
             {
                 Log.Trace("packet with the op-code '" + message.Body.EventName + "' received.");
-
                 packageReceivedSubject.OnNext(message.Body);
 
                 if (!config.ConsumerAutoAck)
