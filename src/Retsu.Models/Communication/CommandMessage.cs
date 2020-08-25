@@ -1,8 +1,8 @@
-﻿namespace Retsu.Models.Communication
-{
-    using System.Runtime.Serialization;
-    using Miki.Discord.Common.Gateway;
+﻿using System.Runtime.Serialization;
+using Miki.Discord.Common.Gateway;
 
+namespace Retsu.Models.Communication
+{
     /// <summary>
 	/// Communication pipeline model for consumer-to-publisher messaging.
 	/// </summary>
