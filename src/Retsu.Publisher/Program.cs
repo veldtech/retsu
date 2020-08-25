@@ -1,29 +1,30 @@
-﻿namespace Retsu.Publisher
-{
-    using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Text.Json;
-    using System.Threading.Tasks;
-    using Miki.Cache.StackExchange;
-    using Miki.Discord.Common.Gateway;
-    using Miki.Discord.Gateway;
-    using Miki.Discord.Gateway.Connection;
-    using Miki.Discord.Gateway.Converters;
-    using Miki.Discord.Gateway.Ratelimiting;
-    using Miki.Logging;
-    using Miki.Serialization.Protobuf;
-    using RabbitMQ.Client;
-    using RabbitMQ.Client.Events;
-    using RabbitMQ.Client.Exceptions;
-    using Retsu.Models.Communication;
-    using Retsu.Publisher.Models;
-    using Sentry;
-    using StackExchange.Redis;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Miki.Cache.StackExchange;
+using Miki.Discord.Common;
+using Miki.Discord.Common.Gateway;
+using Miki.Discord.Gateway;
+using Miki.Discord.Gateway.Connection;
+using Miki.Discord.Gateway.Converters;
+using Miki.Discord.Gateway.Ratelimiting;
+using Miki.Logging;
+using Miki.Serialization.Protobuf;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
+using Retsu.Models.Communication;
+using Retsu.Publisher.Models;
+using Sentry;
+using StackExchange.Redis;
 
+namespace Retsu.Publisher
+{
     internal class Program
     {
         private static GatewayConnectionCluster cluster;
@@ -43,6 +44,7 @@
                 .AddLogEvent((msg, lvl) => { if(lvl >= config.LogLevel) Console.WriteLine(msg); })
                 .AddExceptionEvent((ex, lvl) => SentrySdk.CaptureException(ex))
                 .Apply();
+
             await LoadConfigAsync();
 
             Log.Message("Config loaded.");
@@ -80,10 +82,10 @@
                     Version = GatewayConstants.DefaultVersion,
                     AllowNonDispatchEvents = false,
                     Compressed = false,
-                    Intents = config.Discord.Intents
+                    Intents = config.Discord.Intents,
                 }, allShardIds);
 
-                ConnectionFactory conn = new ConnectionFactory
+                var conn = new ConnectionFactory
                 {
                     Uri = new Uri(config.MessageQueue.Url),
                 };
@@ -93,7 +95,7 @@
                 using var commandModel = connection.CreateModel();
 
                 pusherModel.ExchangeDeclare("gateway", "direct", true);
-                cluster.OnPacketReceived += OnPacketReceivedAsync;
+                cluster.OnPacketReceived.SubscribeTask(OnPacketReceivedAsync);
 
                 commandModel.ExchangeDeclare("gateway-command", "fanout", true);
 
@@ -108,7 +110,6 @@
                 await cluster.StartAsync();
                 Log.Message("Discord gateway running");
                 
-                Log.Message("Everything OK");
                 await Task.Delay(-1);
             }
         }

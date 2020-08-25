@@ -8,6 +8,8 @@
     using System.Linq;
     using System.Threading.Tasks;
     using Miki.Logging;
+    using System.Reactive.Subjects;
+    using System.Threading;
 
     /// <summary>
     /// Like <see cref="GatewayCluster"/>, but only for raw connections.
@@ -15,10 +17,15 @@
     public class GatewayConnectionCluster
     {
         private readonly List<GatewayConnection> connections = new List<GatewayConnection>();
-        public event Func<GatewayMessage, Task> OnPacketReceived;
+        public IObservable<GatewayMessage> OnPacketReceived => packetReceieved;
+        private readonly Subject<GatewayMessage> packetReceieved;
+
+        private readonly List<IDisposable> packetEventSubscription;
 
         public GatewayConnectionCluster(GatewayProperties properties, IEnumerable<int> allShardIds)
         {
+            packetReceieved = new Subject<GatewayMessage>();
+            packetEventSubscription = new List<IDisposable>();
             // Spawn connection shards
             foreach (var i in allShardIds)
             {
@@ -37,25 +44,29 @@
             }
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(CancellationToken token = default)
         {
             foreach(var s in connections)
             {
                 Log.Debug("Spawning shard #" + s.ShardId);
 
-                s.OnPacketReceived += OnPacketReceived;
+                s.OnPacketReceived.Subscribe(packetReceieved.OnNext);
 
-                await s.StartAsync();
+                await s.StartAsync(token);
 
             }
         }
 
-        public async Task StopAsync()
+        public async Task StopAsync(CancellationToken token = default)
         {
+            foreach(var sub in packetEventSubscription)
+            {
+                sub.Dispose();
+            }
+
             foreach(var s in connections)
             {
-                s.OnPacketReceived -= OnPacketReceived;
-                await s.StopAsync();
+                await s.StopAsync(token);
             }
         }
 
@@ -79,6 +90,7 @@
             var shard = GetConnection(shardId);
             if(shard == null)
             {
+                Log.Debug("Shard not initialized in this cluster, ignoring payload.");
                 return;
             }
             await shard.SendCommandAsync(opcode, data);
