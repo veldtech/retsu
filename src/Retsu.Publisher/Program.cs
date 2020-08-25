@@ -58,7 +58,9 @@ namespace Retsu.Publisher
 
                 Log.Message("Cache connected");
                 List<int> allShardIds = new List<int>();
-                for (var i = config.Discord.ShardIndex; i < config.Discord.ShardIndex + config.Discord.ShardAmount; i++)
+                for (var i = config.Discord.ShardIndex; 
+                    i < config.Discord.ShardIndex + config.Discord.ShardAmount; 
+                    i++)
                 {
                     allShardIds.Add(i);
                 }
