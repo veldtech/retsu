@@ -23,6 +23,9 @@
 
             [JsonPropertyName("intents")]
             public GatewayIntents Intents { get; set; }
+
+            [JsonPropertyName("use_large_bot_sharding")]
+            public bool LargeBotSharding { get; set; }
         }
 
         public class MQConfig
