@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Miki.Discord.Common;
 using Miki.Discord.Common.Gateway;
 using Miki.Discord.Gateway;
-using Miki.Discord.Gateway.Converters;
+using Miki.Discord.Rest.Converters;
 using Miki.Logging;
 using Retsu.Consumer.Models;
 using Retsu.Models.Communication;
@@ -41,6 +41,7 @@ namespace Retsu.Consumer
             publisher = new ReactiveMQPublisher(publisherConfig);
 
             var jsonSerializer = new JsonSerializerOptions();
+            jsonSerializer.Converters.Add(new UserAvatarConverter());
             jsonSerializer.Converters.Add(new StringToUlongConverter());
             jsonSerializer.Converters.Add(new StringToShortConverter());
             jsonSerializer.Converters.Add(new StringToEnumConverter<GuildPermission>());
