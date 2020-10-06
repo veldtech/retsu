@@ -3,9 +3,9 @@ using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Miki.Discord.Gateway.Converters;
+using Miki.Discord.Common;
+using Miki.Discord.Rest.Converters;
 using Miki.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -29,7 +29,10 @@ namespace Retsu.Consumer
             this.config = config;
 
             serializerOptions = new JsonSerializerOptions();
+            serializerOptions.Converters.Add(new UserAvatarConverter());
             serializerOptions.Converters.Add(new StringToUlongConverter());
+            serializerOptions.Converters.Add(new StringToShortConverter());
+            serializerOptions.Converters.Add(new StringToEnumConverter<GuildPermission>());
 
             connectionFactory = new ConnectionFactory
             {
