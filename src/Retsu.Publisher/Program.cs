@@ -11,8 +11,8 @@ using Miki.Discord.Common;
 using Miki.Discord.Common.Gateway;
 using Miki.Discord.Gateway;
 using Miki.Discord.Gateway.Connection;
-using Miki.Discord.Gateway.Converters;
 using Miki.Discord.Gateway.Ratelimiting;
+using Miki.Discord.Rest.Converters;
 using Miki.Logging;
 using Miki.Serialization.Protobuf;
 using RabbitMQ.Client;
@@ -69,7 +69,10 @@ namespace Retsu.Publisher
                 {
                     Converters =
                     {
-                        new StringToUlongConverter()
+                        new StringToUlongConverter(),
+                        new StringToShortConverter(),
+                        new StringToEnumConverter<GuildPermission>(),
+                        new UserAvatarConverter()
                     }
                 };
 
