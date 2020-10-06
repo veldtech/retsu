@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Miki.Discord.Common" Version="4.0.0-rc.5" />
+    <PackageReference Include="Miki.Discord.Common" Version="4.0.0-rc.6" />
     <PackageReference Include="Miki.Discord.Gateway" Version="4.0.0-rc.5" />
     <PackageReference Include="Miki.Discord.Rest" Version="4.0.0-rc.5" />
     <PackageReference Include="Miki.Logging" Version="1.4.2" />
