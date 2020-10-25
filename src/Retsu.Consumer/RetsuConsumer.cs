@@ -30,22 +30,24 @@ namespace Retsu.Consumer
         private readonly HashSet<string> subscribedTopics = new HashSet<string>();
         private readonly List<IDisposable> activeTopics = new List<IDisposable>();
 
-        private bool isActive = false;
+        private bool isActive;
 
-		public RetsuConsumer(
-            ConsumerConfiguration config,
-            QueueConfiguration publisherConfig)
+		public RetsuConsumer(ConsumerConfiguration config, QueueConfiguration publisherConfig)
         {
             this.config = config;
             consumer = new ReactiveMQConsumer(config);
             publisher = new ReactiveMQPublisher(publisherConfig);
 
-            var jsonSerializer = new JsonSerializerOptions();
-            jsonSerializer.Converters.Add(new UserAvatarConverter());
-            jsonSerializer.Converters.Add(new StringToUlongConverter());
-            jsonSerializer.Converters.Add(new StringToShortConverter());
-            jsonSerializer.Converters.Add(new StringToEnumConverter<GuildPermission>());
-
+            var jsonSerializer = new JsonSerializerOptions
+            {
+                Converters =
+                {
+                    new UserAvatarConverter(),
+                    new StringToUlongConverter(),
+                    new StringToShortConverter(),
+                    new StringToEnumConverter<GuildPermission>()
+                }
+            };
             packageReceivedSubject = new Subject<GatewayMessage>();
             eventHandler = new GatewayEventHandler(packageReceivedSubject, jsonSerializer);
         }

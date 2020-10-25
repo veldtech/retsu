@@ -1,30 +1,30 @@
-﻿namespace Retsu.Publisher
-{
-    using Miki.Discord.Common.Gateway;
-    using Miki.Discord.Gateway;
-    using Miki.Discord.Gateway.Connection;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading.Tasks;
-    using Miki.Logging;
-    using System.Reactive.Subjects;
-    using System.Threading;
+﻿using Miki.Discord.Common.Gateway;
+using Miki.Discord.Gateway;
+using Miki.Discord.Gateway.Connection;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Miki.Logging;
+using System.Reactive.Subjects;
+using System.Threading;
 
+namespace Retsu.Publisher
+{
     /// <summary>
     /// Like <see cref="GatewayCluster"/>, but only for raw connections.
     /// </summary>
     public class GatewayConnectionCluster
     {
         private readonly List<GatewayConnection> connections = new List<GatewayConnection>();
-        public IObservable<GatewayMessage> OnPacketReceived => packetReceieved;
-        private readonly Subject<GatewayMessage> packetReceieved;
+        public IObservable<GatewayMessage> OnPacketReceived => packetReceived;
+        private readonly Subject<GatewayMessage> packetReceived;
 
         private readonly List<IDisposable> packetEventSubscription;
 
         public GatewayConnectionCluster(GatewayProperties properties, IEnumerable<int> allShardIds)
         {
-            packetReceieved = new Subject<GatewayMessage>();
+            packetReceived = new Subject<GatewayMessage>();
             packetEventSubscription = new List<IDisposable>();
             // Spawn connection shards
             foreach (var i in allShardIds)
@@ -50,10 +50,10 @@
             {
                 Log.Debug("Spawning shard #" + s.ShardId);
 
-                s.OnPacketReceived.Subscribe(packetReceieved.OnNext);
+                packetEventSubscription.Add(
+                    s.OnPacketReceived.Subscribe(packetReceived.OnNext));
 
                 await s.StartAsync(token);
-
             }
         }
 

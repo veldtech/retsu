@@ -11,11 +11,18 @@
     <PackageReference Include="Miki.Discord.Gateway" Version="4.0.0-rc.5" />
     <PackageReference Include="Miki.Logging" Version="1.4.2" />
     <PackageReference Include="Miki.Serialization.Protobuf" Version="1.0.4" />
-    <PackageReference Include="RabbitMQ.Client" Version="5.1.2" />
     <PackageReference Include="Sentry" Version="2.1.6" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Retsu.Models\Retsu.Models.csproj" />
+    <ProjectReference Include="..\Retsu.Publisher.RabbitMQ\Retsu.Publisher.RabbitMQ.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="config.json" />
+    <Content Include="config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.Reactive.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Miki.Cache.StackExchange;
@@ -16,32 +14,29 @@ using Miki.Discord.Rest.Converters;
 using Miki.Logging;
 using Miki.Serialization.Protobuf;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Exceptions;
 using Retsu.Models.Communication;
 using Retsu.Publisher.Models;
+using Retsu.Publisher.RabbitMQ;
 using Sentry;
 using StackExchange.Redis;
 
 namespace Retsu.Publisher
 {
-    internal class Program
+    internal static class Program
     {
         private static GatewayConnectionCluster cluster;
         private static ApplicationConfig config;
-        private static IModel pusherModel;
         private static JsonSerializerOptions options;
 
-        private static ConcurrentDictionary<string, object> queueSet =
-            new ConcurrentDictionary<string, object>();
-
-        private static void Main()
-            => MainAsync().GetAwaiter().GetResult();
-
-        private static async Task MainAsync()
+        private static async Task Main()
         {
-            new LogBuilder()
-                .AddLogEvent((msg, lvl) => { if(lvl >= config.LogLevel) Console.WriteLine(msg); })
+            new LogBuilder().AddLogEvent((msg, lvl) =>
+                {
+                    if (lvl >= config.LogLevel)
+                    {
+                        Console.WriteLine(msg);
+                    }
+                })
                 .AddExceptionEvent((ex, lvl) => SentrySdk.CaptureException(ex))
                 .Apply();
 
@@ -57,7 +52,7 @@ namespace Retsu.Publisher
                 var cache = new StackExchangeCacheClient(new ProtobufSerializer(), redis);
 
                 Log.Message("Cache connected");
-                List<int> allShardIds = new List<int>();
+                var allShardIds = new List<int>();
                 for (var i = config.Discord.ShardIndex; 
                     i < config.Discord.ShardIndex + config.Discord.ShardAmount; 
                     i++)
@@ -96,20 +91,10 @@ namespace Retsu.Publisher
                 };
 
                 using var connection = conn.CreateConnection();
-                using var model = pusherModel = connection.CreateModel();
-                using var commandModel = connection.CreateModel();
-
-                pusherModel.ExchangeDeclare("gateway", "direct", true);
-                cluster.OnPacketReceived.SubscribeTask(OnPacketReceivedAsync);
-
-                commandModel.ExchangeDeclare("gateway-command", "fanout", true);
-
-                var queue = commandModel.QueueDeclare();
-                commandModel.QueueBind(queue.QueueName, "gateway-command", "");
-
-                var consumer = new AsyncEventingBasicConsumer(commandModel);
-                consumer.Received += OnCommandReceivedAsync;
-                commandModel.BasicConsume(queue.QueueName, false, consumer);
+                var publisher = new RabbitMQPublisher(
+                    connection, cluster.OnPacketReceived.Select(ToSendArgs));
+                publisher.OnCommandReceived.SubscribeTask(OnCommandReceivedAsync);
+                await publisher.StartAsync(default);
                 Log.Message("Set up RabbitMQ");
 
                 await cluster.StartAsync();
@@ -119,50 +104,38 @@ namespace Retsu.Publisher
             }
         }
 
-        private static Task OnPacketReceivedAsync(GatewayMessage arg)
-        {
-            if(arg.EventName == "READY")
-            {
-                var ready = JsonSerializer.Deserialize<GatewayReadyPacket>(
-                    ((JsonElement)arg.Data).GetRawText(), options);
-                Log.Message($"Shard {ready.CurrentShard} is connected");
-            }
-
-            if(config.IgnorePackets.Contains(arg.EventName))
-            {
-                return Task.CompletedTask;
-            }
-
-            if(!queueSet.ContainsKey(arg.EventName))
-            {
-                var queue = GetQueueNameFromEventName(arg.EventName);
-                pusherModel.QueueDeclare(queue, true, false, false);
-                pusherModel.QueueBind(queue, "gateway", arg.EventName);
-                queueSet.TryAdd(arg.EventName, null);
-            }
-
-            try
-            {
-                pusherModel.BasicPublish(
-                    "gateway", arg.EventName, body: Encoding.UTF8.GetBytes(JsonSerializer.Serialize(arg)));
-            }
-            catch(AlreadyClosedException)
-            {
-                Log.Warning($"Event '{arg.EventName}' missed due to AMQP client closed.");
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private static string GetQueueNameFromEventName(string eventName)
+        private static string GetEventName(string eventName)
         {
             return "gateway:" + eventName;
         }
 
-        private static async Task OnCommandReceivedAsync(object sender, BasicDeliverEventArgs e)
+        private static CommandMessageSendArgs ToSendArgs(GatewayMessage message)
         {
-            var json = Encoding.UTF8.GetString(e.Body);
-            CommandMessage msg = JsonSerializer.Deserialize<CommandMessage>(json);
+            if(message.EventName == "READY")
+            {
+                var ready = JsonSerializer.Deserialize<GatewayReadyPacket>(
+                    ((JsonElement)message.Data).GetRawText(), options);
+                Log.Message($"Shard {ready.CurrentShard} is connected");
+            }
+
+            if (!message.OpCode.HasValue)
+            {
+                return null;
+            }
+            
+            return new CommandMessageSendArgs
+            {
+                EventName = GetEventName(message.EventName),
+                Message = new CommandMessage
+                {
+                    Opcode = message.OpCode.Value,
+                    Data = message.Data
+                }
+            };
+        }
+        
+        private static async Task OnCommandReceivedAsync(CommandMessage msg)
+        {
             if (msg.Type == null)
             {
                 await cluster.SendAsync(msg.ShardId, msg.Opcode, msg.Data);
@@ -194,7 +167,7 @@ namespace Retsu.Publisher
             }
             else
             {
-                string json = await File.ReadAllTextAsync(filePath);
+                var json = await File.ReadAllTextAsync(filePath);
                 config = JsonSerializer.Deserialize<ApplicationConfig>(json);
             }
         }   

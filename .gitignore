@@ -3,6 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+.DS_Store
+
 # User-specific files
 *.suo
 *.user
@@ -329,3 +331,4 @@ ASALocalRun/
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
 src/global.json
+src/Retsu.Publisher/config.json
