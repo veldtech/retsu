@@ -154,6 +154,7 @@ namespace Retsu.Publisher
             return Task.CompletedTask;
         }
 
+
         private static string GetQueueNameFromEventName(string eventName)
         {
             return "gateway:" + eventName;
